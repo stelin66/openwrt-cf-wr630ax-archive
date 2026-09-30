@@ -1,0 +1,182 @@
+name: Build OpenWrt initramfs for COMFAST CF-WR630AX
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-cf-wr630ax-initramfs.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cf-wr630ax-initramfs-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OPENWRT_BASE: 7670addb077d7556a5603f0b26e2bad1b052ae84
+      DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+
+    steps:
+      - name: Checkout WR630AX archive
+        uses: actions/checkout@v4
+        with:
+          path: archive-repo
+
+      - name: Checkout exact OpenWrt base
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          ref: ${{ env.OPENWRT_BASE }}
+          fetch-depth: 0
+          path: openwrt
+
+      - name: Install build dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libncurses-dev libssl-dev python3 python3-setuptools \
+            rsync swig unzip zlib1g-dev file wget ca-certificates u-boot-tools
+
+      - name: Apply archived PR patch
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          test "$(git rev-parse HEAD)" = "$OPENWRT_BASE"
+          git config user.name "CF-WR630AX build"
+          git config user.email "actions@users.noreply.github.com"
+          git am --3way "$GITHUB_WORKSPACE/archive-repo/archive/openwrt-pr-20654.patch"
+
+      - name: Verify patched tree matches archived PR head
+        run: |
+          set -euo pipefail
+          cd openwrt
+          check_blob() {
+            local path="$1" expected="$2" actual
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "::error file=$path::blob mismatch: expected $expected, got $actual"
+              exit 1
+            }
+          }
+          check_blob package/boot/uboot-tools/uboot-envtools/files/mediatek_filogic ea40dab1403cca164257b78c601849d3eaa504fc
+          check_blob target/linux/mediatek/dts/mt7981a-comfast-cf-wr633ax.dts efae87aa0cf36f84fb59ee9eac9b6a6415ed7679
+          check_blob target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts 4652b801c9444431115cb0a11fdd03e71bacebc8
+          check_blob target/linux/mediatek/dts/mt7981b-comfast-cf-wr631ax.dts 094464390b42bb70110f4cba98c999bf34fd1ec7
+          check_blob target/linux/mediatek/filogic/base-files/etc/board.d/02_network 0cfe0ab466f37e3199970a2895d61949c966027d
+          check_blob target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac 22b1784cb8cb0b073ce494b69479630d4898454f
+          check_blob target/linux/mediatek/image/filogic.mk 227d52f3202c75fc02e4e36cb558bd7593deef5a
+          test "$(git diff --name-only "$OPENWRT_BASE"..HEAD | wc -l)" -eq 7
+          read -r additions deletions < <(git diff --numstat "$OPENWRT_BASE"..HEAD | awk '{a += $1; d += $2} END {print a+0, d+0}')
+          test "$additions" -eq 911
+          test "$deletions" -eq 0
+
+      - name: Pin and install feeds
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > feeds.conf <<'EOF'
+          src-git packages https://git.openwrt.org/feed/packages.git^9959178f13098d2b014f7ed44b83baf2b9397063
+          src-git luci https://git.openwrt.org/project/luci.git^c935260b3026d805dd414bd266884cfe0600d03a
+          src-git routing https://git.openwrt.org/feed/routing.git^149ea45cc223597262415823bcdca3effc601bc2
+          src-git telephony https://git.openwrt.org/feed/telephony.git^44d6355a7b2d69dd25d73913811b421fc504b836
+          src-git video https://github.com/openwrt/video.git^5e86748c62a5e6c5f14c2e436a8d04090a18cf72
+          EOF
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Configure CF-WR630AX initramfs
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+          CONFIG_TARGET_ROOTFS_INITRAMFS=y
+          EOF
+          make defconfig
+          grep -Fxq 'CONFIG_TARGET_mediatek=y' .config
+          grep -Fxq 'CONFIG_TARGET_mediatek_filogic=y' .config
+          grep -Fxq "$DEVICE_CONFIG" .config
+          grep -Fxq 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' .config
+          ./scripts/diffconfig.sh | tee "$GITHUB_WORKSPACE/diffconfig-initramfs.txt"
+
+      - name: Download sources
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          make -j"$(nproc)" download
+
+      - name: Build initramfs
+        run: |
+          set -euo pipefail
+          cd openwrt
+          if ! make -j"$(nproc)"; then
+            echo "::warning::Parallel build failed; rerunning serially with V=s"
+            make -j1 V=s
+          fi
+
+      - name: Verify initramfs FIT and create checksum
+        run: |
+          set -euo pipefail
+          cd openwrt
+          out="bin/targets/mediatek/filogic"
+          stage="$GITHUB_WORKSPACE/wr630ax-initramfs-artifacts"
+          test -d "$out"
+          mkdir -p "$stage"
+
+          shopt -s nullglob
+          images=( "$out"/*cf-wr630ax*initramfs* )
+          if (( ${#images[@]} != 1 )); then
+            echo "::error::Expected exactly one WR630AX initramfs image, found ${#images[@]}"
+            find "$out" -maxdepth 1 -type f -printf '%f\n' | sort
+            exit 1
+          fi
+
+          image="${images[0]}"
+          cp "$image" "$stage/"
+          cp .config "$stage/openwrt-initramfs.config"
+          cp "$GITHUB_WORKSPACE/diffconfig-initramfs.txt" "$stage/"
+
+          dumpimage -l "$image" | tee "$stage/FIT-INFO.txt"
+          grep -Eq 'Image Type:.*(AArch64|ARM64)|Architecture:.*(AArch64|ARM64|ARM)' "$stage/FIT-INFO.txt" || true
+
+          (
+            cd "$stage"
+            sha256sum "$(basename "$image")" | tee SHA256SUMS
+          )
+
+          {
+            echo "OpenWrt base: $OPENWRT_BASE"
+            echo "Patched tree HEAD: $(git rev-parse HEAD)"
+            echo "Archived patch SHA256: $(sha256sum "$GITHUB_WORKSPACE/archive-repo/archive/openwrt-pr-20654.patch" | awk '{print $1}')"
+            echo "Device config: $DEVICE_CONFIG"
+            echo "Initramfs: CONFIG_TARGET_ROOTFS_INITRAMFS=y"
+            echo "Expected FIT kernel load address from archived device definition: 0x44000000"
+            echo "Expected DT load address from archived device definition: 0x43f00000"
+            echo
+            echo "Pinned feeds:"
+            for feed in packages luci routing telephony video; do
+              echo "$feed=$(git -C "feeds/$feed" rev-parse HEAD)"
+            done
+            echo
+            stat -c '%n %s bytes' "$stage"/*initramfs*
+          } | tee "$stage/BUILD-METADATA.txt"
+
+      - name: Upload initramfs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cf-wr630ax-initramfs-${{ github.run_number }}
+          path: wr630ax-initramfs-artifacts/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
