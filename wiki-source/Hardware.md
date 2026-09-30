@@ -126,6 +126,19 @@ band@1 {
 };
 ```
 
+### Runtime verification
+
+The NVMEM implementation was tested in initramfs build #4. After booting the image from RAM, Linux reported:
+
+```text
+phy0 40:a5:ef:45:cb:41
+phy1 40:a5:ef:45:cb:42
+```
+
+This is an exact match with the two Factory values above.
+
+The original support used a runtime hotplug rule for `phy1` that read `Factory + 0x8000` and then added one to the address. On this device that produced `40:a5:ef:45:cb:43`, which is not the value stored in Factory. The per-band NVMEM definition removes that workaround and restores the stored `...:42` address.
+
 ## WR632AX relationship
 
 OpenWrt's later CF-WR632AX support uses the same two Wi-Fi MAC offsets, `0x4` and `0x8000`. That is useful evidence for a shared COMFAST/MediaTek Factory-data convention.

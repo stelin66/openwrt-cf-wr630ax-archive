@@ -32,6 +32,8 @@ The working rule for this project is: **verify in RAM first, write flash last**.
 - 5 GHz radio works.
 - The board EEPROM/calibration area is readable from Factory.
 - The primary and secondary Wi-Fi MAC locations have been verified directly.
+- Per-band NVMEM MAC assignment is verified in a fresh initramfs boot.
+- Runtime result is `phy0 = 40:a5:ef:45:cb:41` and `phy1 = 40:a5:ef:45:cb:42`.
 
 ### LEDs and buttons
 
@@ -39,6 +41,24 @@ The working rule for this project is: **verify in RAM first, write flash last**.
 - WAN link/activity LED works.
 - GPIO1 is physically the WPS/Mesh button.
 - `KEY_WPS_BUTTON` produces correct OpenWrt pressed/released hotplug events.
+
+## Verified initramfs build #4
+
+```text
+openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
+8746048 bytes (0x857440)
+SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
+```
+
+U-Boot `iminfo` verified all FIT hashes before boot.
+
+This image contains the hardware-fix patch with:
+
+- corrected LED definitions
+- WPS/Mesh button fix
+- WAN LED trigger
+- per-band Wi-Fi NVMEM MAC cells
+- removal of the WR630AX runtime Wi-Fi MAC hotplug workaround
 
 ## Current gate before permanent flashing
 
@@ -52,7 +72,7 @@ Permanent installation remains blocked until all of the following are true:
 - [x] LED mapping verified
 - [x] WPS/Mesh button verified
 - [x] Factory Wi-Fi MAC offsets verified
-- [ ] NVMEM MAC fix verified in a fresh initramfs boot
+- [x] NVMEM MAC fix verified in a fresh initramfs boot
 - [ ] New full factory/sysupgrade images built with all fixes
 - [ ] BL2 backup copied off-device and checksummed
 - [ ] u-boot-env backup copied off-device and checksummed

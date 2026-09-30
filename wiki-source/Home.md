@@ -39,8 +39,34 @@ The goal is simple: preserve the original work, verify it against real hardware,
 | LEDs | ✅ | Physical GPIO mapping verified |
 | WPS/Mesh button | ✅ | GPIO level and pressed/released hotplug events verified |
 | Wi-Fi MAC layout | ✅ | Factory offsets verified directly on hardware |
-| NVMEM Wi-Fi MAC fix | 🧪 | Build/testing in progress |
+| NVMEM Wi-Fi MAC fix | ✅ | Verified in initramfs build #4 on hardware |
 | Permanent NAND installation | ⛔ | Intentionally not attempted yet |
+
+## Latest verified initramfs
+
+GitHub Actions **build #4** completed successfully and was booted from RAM on the physical router.
+
+```text
+Image:
+openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
+
+Size:
+8746048 bytes (0x857440)
+
+SHA256:
+9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
+```
+
+U-Boot `iminfo` verified the kernel, initrd and FDT hashes before boot.
+
+The key result from the NVMEM test was:
+
+```text
+phy0 40:a5:ef:45:cb:41
+phy1 40:a5:ef:45:cb:42
+```
+
+Those values match the addresses stored in Factory at offsets `0x4` and `0x8000`.
 
 ## Hardware-verified fixes
 
@@ -59,12 +85,12 @@ Verified corrections include:
 
 The Factory data measured on the test unit is:
 
-| Radio | Factory offset | Role |
+| Radio | Factory offset | Stored/tested address |
 |---|---:|---|
-| `phy0` | `0x0004` | 2.4 GHz MAC |
-| `phy1` | `0x8000` | 5 GHz MAC |
+| `phy0` | `0x0004` | `40:a5:ef:45:cb:41` |
+| `phy1` | `0x8000` | `40:a5:ef:45:cb:42` |
 
-The old runtime workaround incremented the MAC at `0x8000`, producing the wrong secondary address. The NVMEM fix uses the stored address directly.
+The old runtime workaround incremented the MAC at `0x8000`, producing `...:43`. The NVMEM fix now uses the stored secondary address directly, and this has been verified on hardware.
 
 ## Safe test path
 
@@ -112,4 +138,4 @@ See [[Provenance]] for the full archival record.
 
 ---
 
-**Next:** [[Hardware]] · [[Verification-and-safety]] · [[Provenance]]
+**Next:** [[Hardware]] · [[Hardware-modifications]] · [[Verification-and-safety]] · [[Provenance]]
