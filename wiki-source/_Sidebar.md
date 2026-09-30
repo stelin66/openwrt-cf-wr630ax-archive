@@ -4,6 +4,7 @@
 
 **Device**
 - [[Hardware]]
+- [[Hardware-modifications]]
 - [[Verification-and-safety]]
 
 **Project**
