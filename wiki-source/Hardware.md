@@ -36,6 +36,18 @@ Corresponding layout:
 > [!CAUTION]
 > The NAND partition named **Factory** is calibration/MAC storage. It is unrelated to an OpenWrt file named `factory.bin`.
 
+After permanent OpenWrt sysupgrade, `/proc/mtd` retained this exact fixed-partition layout. Direct SHA256 reads also confirmed that BL2, u-boot-env, Factory and FIP were unchanged.
+
+The resulting OpenWrt UBI layout on the verified unit is:
+
+| Volume | Type | Size |
+|---|---|---:|
+| kernel | dynamic | 36 LEB / 4,571,136 bytes |
+| rootfs | dynamic | 36 LEB / 4,571,136 bytes |
+| rootfs_data | dynamic | 415 LEB / 52,695,040 bytes |
+
+The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-block handling.
+
 ## U-Boot
 
 Observed bootloader:
@@ -128,7 +140,7 @@ band@1 {
 
 ### Runtime verification
 
-The NVMEM implementation was tested in initramfs build #4. After booting the image from RAM, Linux reported:
+The NVMEM implementation was first tested in initramfs build #4 and then re-verified after permanent NAND installation. Linux reported:
 
 ```text
 phy0 40:a5:ef:45:cb:41
