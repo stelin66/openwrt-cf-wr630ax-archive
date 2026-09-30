@@ -1,5 +1,5 @@
 From: Hardware verification follow-up <noreply@local>
-Subject: [PATCH] mediatek: filogic: fix CF-WR630AX buttons and LEDs
+Subject: [PATCH] mediatek: filogic: fix CF-WR630AX hardware definitions
 
 Keep the original CF-WR630AX support patch intact and apply these
 hardware-verified corrections separately.
@@ -10,25 +10,23 @@ The physical LED mapping was verified on a CF-WR630AX:
   GPIO 8  = Mesh
   GPIO 13 = WAN
 
-The original DTS described all four LEDs as status LEDs, causing sysfs
-name collisions and using the 5.8G LED as the running indicator.
+Use distinct LED functions, use the Mesh LED for boot/failsafe/upgrade,
+and configure the WAN LED as an eth1 link/activity indicator.
 
-The physical mode button is the WPS button. KEY_MODE is not supported by
-OpenWrt's gpio-button-hotplug driver, while KEY_WPS_BUTTON is.
+GPIO 1 was verified as the physical WPS/Mesh button. KEY_MODE is not
+supported by OpenWrt's gpio-button-hotplug driver, while
+KEY_WPS_BUTTON produces the expected pressed/released hotplug events.
 
-Also configure the WAN LED as an eth1 link/activity indicator.
-
-This patch intentionally does not change Wi-Fi MAC handling yet; that
-will be handled separately after the Factory NVMEM offsets are verified
-on hardware.
+The Factory layout was also verified on hardware. The primary Wi-Fi MAC
+is stored at offset 0x4 and the secondary Wi-Fi MAC at offset 0x8000.
+Describe both as NVMEM cells and assign them to band@0 and band@1.
+This removes the WR630AX runtime hotplug workaround which incorrectly
+incremented the secondary address from offset 0x8000.
 
 ---
- target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts | 29 +++++++++++-----------
- target/linux/mediatek/filogic/base-files/etc/board.d/01_leds | 3 +++
- 2 files changed, 18 insertions(+), 14 deletions(-)
+ 3 files changed, 44 insertions(+), 18 deletions(-)
 
 diff --git a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
-index f32bc67..340a375 100644
 --- a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
 +++ b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
 @@ -9,10 +9,9 @@
@@ -58,7 +56,7 @@ index f32bc67..340a375 100644
  			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
  		};
  
-@@ -46,25 +45,27 @@
+@@ -46,26 +45,28 @@
  		led_wlan5g: wlan5g {
  			gpios = <&pio 35 GPIO_ACTIVE_LOW>;
  			color = <LED_COLOR_ID_BLUE>;
@@ -93,11 +91,53 @@ index f32bc67..340a375 100644
 +		};
  	};
  };
+ 
+@@ -237,6 +238,18 @@
+ 						reg = <0x0 0x1000>;
+ 					};
+ 
++					macaddr_factory_4: macaddr@4 {
++						compatible = "mac-base";
++						reg = <0x4 0x6>;
++						#nvmem-cell-cells = <1>;
++					};
++
++					macaddr_factory_8000: macaddr@8000 {
++						compatible = "mac-base";
++						reg = <0x8000 0x6>;
++						#nvmem-cell-cells = <1>;
++					};
++
+ 					macaddr_factory_e000: macaddr@e000 {
+ 						compatible = "mac-base";
+ 						reg = <0xe000 0x6>;
+@@ -269,8 +282,22 @@
+ };
+ 
+ &wifi {
++	#address-cells = <1>;
++	#size-cells = <0>;
+ 	status = "okay";
+ 	nvmem-cells = <&eeprom_factory_0>;
+ 	nvmem-cell-names = "eeprom";
++
++	band@0 {
++		reg = <0>;
++		nvmem-cells = <&macaddr_factory_4 0>;
++		nvmem-cell-names = "mac-address";
++	};
++
++	band@1 {
++		reg = <1>;
++		nvmem-cells = <&macaddr_factory_8000 0>;
++		nvmem-cell-names = "mac-address";
++	};
+ };
+ 
 diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
-index bfc10ee..a3f7772 100644
 --- a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
 +++ b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
-@@ -6,6 +6,9 @@ wavlink,wl-wn573hx3)
+@@ -63,6 +63,9 @@
  cudy,wr3000-v1)
  	ucidef_set_led_netdev "wan" "wan" "blue:wan" "wan"
  	;;
@@ -107,3 +147,17 @@ index bfc10ee..a3f7772 100644
  cudy,wr3000h-v1|\
  cudy,wr3000p-v1)
  	ucidef_set_led_netdev "lan1" "lan1" "white:lan-1" "lan1" "link tx rx"
+diff --git a/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac b/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
+--- a/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
++++ b/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
+@@ -85,10 +85,6 @@
+ 		addr=$(mtd_get_mac_binary "Factory" 0x8000)
+ 		[ "$PHYNBR" = "1" ] && macaddr_add $addr 1 > /sys${DEVPATH}/macaddress
+ 		;;
+-	comfast,cf-wr630ax)
+-		addr=$(mtd_get_mac_binary "Factory" 0x8000)
+-		[ "$PHYNBR" = "1" ] && macaddr_add $addr 1 > /sys${DEVPATH}/macaddress
+-		;;
+ 	comfast,cf-wr631ax)
+ 		addr=$(mtd_get_mac_binary "Factory" 0x8000)
+ 		[ "$PHYNBR" = "1" ] && macaddr_add $addr 1 > /sys${DEVPATH}/macaddress
