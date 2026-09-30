@@ -2,8 +2,6 @@ name: Build OpenWrt full images for COMFAST CF-WR630AX
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
