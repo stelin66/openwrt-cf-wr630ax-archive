@@ -3,13 +3,13 @@
 ![Initramfs build](https://github.com/stelin66/openwrt-cf-wr630ax-archive/actions/workflows/build-cf-wr630ax-initramfs.yml/badge.svg)
 
 > [!WARNING]
-> **Experimental support. Do not permanently flash this device yet.**
+> **Experimental device support.**
 >
-> The current work is being validated from RAM using U-Boot/TFTP. The NAND **Factory** partition contains calibration data and MAC addresses and must not be erased or overwritten.
+> Permanent OpenWrt installation has now been verified on one physical CF-WR630AX test unit, including normal cold boot from NAND/UBI. The NAND **Factory** partition contains device-specific calibration data and MAC addresses and must never be erased or overwritten. Keep verified backups and a UART/TFTP recovery path before flashing another unit.
 
 This wiki documents an independent hardware-verification effort for the **COMFAST CF-WR630AX AX3000**, based on the archived OpenWrt support from [PR #20654](https://github.com/openwrt/openwrt/pull/20654).
 
-The goal is simple: preserve the original work, verify it against real hardware, fix only what measurements show is wrong, and keep a safe recovery path before any permanent installation is attempted.
+The goal is to preserve the original work, verify it against real hardware, fix only what measurements show is wrong, and keep the original author attribution separate from later hardware corrections.
 
 ## Hardware at a glance
 
@@ -33,40 +33,57 @@ The goal is simple: preserve the original work, verify it against real hardware,
 | Initramfs RAM boot | ✅ | FIT image boots without writing NAND |
 | NAND / NMBM / UBI attach | ✅ | Detected and attached correctly |
 | LAN | ✅ | DSA/MT7531 and LAN links verified |
-| WAN | ✅ | MT7981 PHY link verified at 1 Gbit/s |
+| WAN | ✅ | MT7981 PHY verified at 1 Gbit/s full duplex |
 | 2.4 GHz Wi-Fi | ✅ | AP operation verified |
 | 5 GHz Wi-Fi | ✅ | AP operation verified |
 | LEDs | ✅ | Physical GPIO mapping verified |
 | WPS/Mesh button | ✅ | GPIO level and pressed/released hotplug events verified |
 | Wi-Fi MAC layout | ✅ | Factory offsets verified directly on hardware |
-| NVMEM Wi-Fi MAC fix | ✅ | Verified in initramfs build #4 on hardware |
-| Permanent NAND installation | ⛔ | Intentionally not attempted yet |
+| NVMEM Wi-Fi MAC fix | ✅ | Verified from RAM and after permanent NAND install |
+| Full sysupgrade image | ✅ | Tar/control validation and hardware install verified |
+| Protected MTD partitions | ✅ | BL2, env, Factory and FIP byte-identical after sysupgrade |
+| Cold boot from NAND | ✅ | Normal U-Boot autoboot and OpenWrt startup verified |
+| LuCI image | ✅ | Pinned LuCI full build boots and web UI is operational |
 
-## Latest verified initramfs
+## Verified images
 
-GitHub Actions **build #4** completed successfully and was booted from RAM on the physical router.
+### Initramfs build #4
 
 ```text
-Image:
 openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
-
-Size:
 8746048 bytes (0x857440)
-
-SHA256:
-9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
+SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
 ```
 
-U-Boot `iminfo` verified the kernel, initrd and FDT hashes before boot.
-
-The key result from the NVMEM test was:
+### Hardware-fixed full build
 
 ```text
-phy0 40:a5:ef:45:cb:41
-phy1 40:a5:ef:45:cb:42
+factory.bin
+10354688 bytes
+SHA256 ac8606bf5f548bb26ab3b62112bc73c8c1e8bade2506cdb4d63c94794bd4c6f5
+
+sysupgrade.bin
+9052439 bytes
+SHA256 7ad1a79edf6d419594e837d900e16e00eed81d55e27dc583853759d693fc84be
 ```
 
-Those values match the addresses stored in Factory at offsets `0x4` and `0x8000`.
+This sysupgrade image was installed to NAND and survived normal reboot and cold boot.
+
+### LuCI full build #1
+
+GitHub Actions run **36767167724** completed successfully.
+
+```text
+factory.bin
+10878976 bytes
+SHA256 86911460d89a00b2b73c17a4c67c51284bb0c0ed78d645e58bcc38196d3448b6
+
+sysupgrade.bin
+9502999 bytes
+SHA256 0ccb08a90c756ed10df3ba317233e69fafb4203d11a1e7afabb062fb093ea1aa
+```
+
+The LuCI sysupgrade image passed `sysupgrade -T`, was installed successfully, and the web interface was verified on the physical router. LuCI reports the board as **COMFAST CF-WR630AX**, target **mediatek/filogic**, kernel **6.12.55**.
 
 ## Hardware-verified fixes
 
@@ -90,11 +107,9 @@ The Factory data measured on the test unit is:
 | `phy0` | `0x0004` | `40:a5:ef:45:cb:41` |
 | `phy1` | `0x8000` | `40:a5:ef:45:cb:42` |
 
-The old runtime workaround incremented the MAC at `0x8000`, producing `...:43`. The NVMEM fix now uses the stored secondary address directly, and this has been verified on hardware.
+The old runtime workaround incremented the MAC at `0x8000`, producing `...:43`. The NVMEM fix uses the stored secondary address directly and remains correct after permanent installation.
 
-## Safe test path
-
-The project currently follows this sequence:
+## Verified installation path
 
 ```text
 archived PR
@@ -111,16 +126,28 @@ build full images
     ↓
 backup BL2 + env + Factory + FIP + OEM UBI
     ↓
-only then consider permanent installation
+review nand/sysupgrade path
+    ↓
+sysupgrade -T
+    ↓
+permanent sysupgrade to UBI
+    ↓
+normal reboot + cold boot
+    ↓
+verify protected partitions remain byte-identical
 ```
 
-No NAND write is required for the current validation work.
+## Snapshot package warning
+
+This project intentionally reproduces an older OpenWrt snapshot using pinned source/feed commits. The generated `/etc/apk/repositories.d/distfeeds.list` points at rolling `downloads.openwrt.org/snapshots/` repositories, which later moved to newer package ABIs.
+
+Do **not** force-install current rolling snapshot packages into this historical image. Matching extra packages or kernel modules should be built from the same pinned source/feed set, or the device should be ported to current OpenWrt main.
 
 ## Important: CF-WR630AX is not CF-WR632AX firmware
 
-The current upstream **CF-WR632AX** support uses the same useful Wi-Fi Factory offsets (`0x4` and `0x8000`), which strongly suggests shared COMFAST/MediaTek design conventions.
+The current upstream **CF-WR632AX** support uses the same useful Wi-Fi Factory offsets (`0x4` and `0x8000`), which is useful corroboration for the NVMEM layout.
 
-However, the devices are materially different. Upstream WR632AX hardware has 512 MiB RAM, a different Ethernet layout, USB and a fan. **Do not flash WR632AX images on a WR630AX.**
+However, the devices are materially different. WR632AX has 512 MiB RAM, a different Ethernet layout, USB and a fan. **Do not flash WR632AX images on a WR630AX.**
 
 See [[Hardware]] for the detailed layout.
 
