@@ -86,6 +86,11 @@ jobs:
           grep -Fq 'function = LED_FUNCTION_WLAN_2GHZ;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
           grep -Fq 'function = "mesh";' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
           grep -Fq 'function = LED_FUNCTION_WAN;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'macaddr_factory_4: macaddr@4 {' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'macaddr_factory_8000: macaddr@8000 {' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'nvmem-cells = <&macaddr_factory_4 0>;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'nvmem-cells = <&macaddr_factory_8000 0>;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          ! grep -Fq 'comfast,cf-wr630ax)' target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
           grep -Fq 'ucidef_set_led_netdev "wan" "WAN" "blue:wan" "eth1" "link tx rx"' \
             target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
 
@@ -170,7 +175,7 @@ jobs:
             echo "Patched tree HEAD: $(git rev-parse HEAD)"
             echo "Archived patch SHA256: $(sha256sum "$GITHUB_WORKSPACE/archive-repo/archive/openwrt-pr-20654.patch" | awk '{print $1}')"
             echo "Hardware fix v1 patch SHA256: $(sha256sum "$GITHUB_WORKSPACE/archive-repo/archive/cf-wr630ax-hwfix-v1.patch" | awk '{print $1}')"
-            echo "Hardware fix scope: LEDs + WPS button + WAN LED trigger; Wi-Fi MAC NVMEM unchanged"
+            echo "Hardware fix scope: LEDs + WPS button + WAN LED trigger + per-band Wi-Fi MAC NVMEM"
             echo "Device config: $DEVICE_CONFIG"
             echo "Initramfs: CONFIG_TARGET_ROOTFS_INITRAMFS=y"
             echo "Expected FIT kernel load address from archived device definition: 0x44000000"
