@@ -23,11 +23,12 @@ will be handled separately after the Factory NVMEM offsets are verified
 on hardware.
 
 ---
- target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts | 22 +++++++++++-----------
- target/linux/mediatek/filogic/base-files/etc/board.d/01_leds | 4 ++++
- 2 files changed, 15 insertions(+), 11 deletions(-)
+ target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts | 29 +++++++++++-----------
+ target/linux/mediatek/filogic/base-files/etc/board.d/01_leds | 3 +++
+ 2 files changed, 18 insertions(+), 14 deletions(-)
 
 diff --git a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+index f32bc67..340a375 100644
 --- a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
 +++ b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
 @@ -9,10 +9,9 @@
@@ -57,7 +58,7 @@ diff --git a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts b/target/l
  			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
  		};
  
-@@ -43,27 +42,30 @@
+@@ -46,25 +45,27 @@
  		led_wlan5g: wlan5g {
  			gpios = <&pio 35 GPIO_ACTIVE_LOW>;
  			color = <LED_COLOR_ID_BLUE>;
@@ -83,20 +84,21 @@ diff --git a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts b/target/l
  		};
  
  		led_wan: wan {
--	            gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+-            gpios = <&pio 13 GPIO_ACTIVE_LOW>;
 +			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
  			color = <LED_COLOR_ID_BLUE>;
 -			function = LED_FUNCTION_STATUS;
--	        };
+-        };
 +			function = LED_FUNCTION_WAN;
 +		};
  	};
  };
- 
 diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
+index bfc10ee..a3f7772 100644
 --- a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
 +++ b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
-@@ -40,6 +40,10 @@ cudy,wr3000-v1)
+@@ -6,6 +6,9 @@ wavlink,wl-wn573hx3)
+ cudy,wr3000-v1)
  	ucidef_set_led_netdev "wan" "wan" "blue:wan" "wan"
  	;;
 +comfast,cf-wr630ax)
