@@ -2,11 +2,6 @@ name: Build OpenWrt full images + LuCI for COMFAST CF-WR630AX
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/build-cf-wr630ax-full-luci.yml'
 
 permissions:
   contents: read
