@@ -1,0 +1,107 @@
+From: Hardware verification follow-up <noreply@local>
+Subject: [PATCH] mediatek: filogic: fix CF-WR630AX buttons and LEDs
+
+Keep the original CF-WR630AX support patch intact and apply these
+hardware-verified corrections separately.
+
+The physical LED mapping was verified on a CF-WR630AX:
+  GPIO 35 = 5.8G
+  GPIO 34 = 2.4G
+  GPIO 8  = Mesh
+  GPIO 13 = WAN
+
+The original DTS described all four LEDs as status LEDs, causing sysfs
+name collisions and using the 5.8G LED as the running indicator.
+
+The physical mode button is the WPS button. KEY_MODE is not supported by
+OpenWrt's gpio-button-hotplug driver, while KEY_WPS_BUTTON is.
+
+Also configure the WAN LED as an eth1 link/activity indicator.
+
+This patch intentionally does not change Wi-Fi MAC handling yet; that
+will be handled separately after the Factory NVMEM offsets are verified
+on hardware.
+
+---
+ target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts | 22 +++++++++++-----------
+ target/linux/mediatek/filogic/base-files/etc/board.d/01_leds | 4 ++++
+ 2 files changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+--- a/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
++++ b/target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+@@ -9,10 +9,9 @@
+ 
+ 	aliases {
+ 		serial0 = &uart0;
+-		led-boot = &led_mode;
+-		led-failsafe = &led_mode;
+-		led-running = &led_wlan5g;
+-		led-upgrade = &led_wlan2g;
++		led-boot = &led_mesh;
++		led-failsafe = &led_mesh;
++		led-upgrade = &led_mesh;
+ 	};
+ 
+ 	chosen {
+@@ -27,9 +26,9 @@
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
+ 
+-		mode_button {
+-			label = "mode_button";
+-			linux,code = <KEY_MODE>;
++		wps {
++			label = "wps";
++			linux,code = <KEY_WPS_BUTTON>;
+ 			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
+ 		};
+ 
+@@ -43,27 +42,30 @@
+ 		led_wlan5g: wlan5g {
+ 			gpios = <&pio 35 GPIO_ACTIVE_LOW>;
+ 			color = <LED_COLOR_ID_BLUE>;
+-			function = LED_FUNCTION_STATUS;
++			function = LED_FUNCTION_WLAN_5GHZ;
++			linux,default-trigger = "phy1tpt";
+ 		};
+ 
+ 		led_wlan2g: wlan2g {
+ 			gpios = <&pio 34 GPIO_ACTIVE_LOW>;
+ 			color = <LED_COLOR_ID_BLUE>;
+-			function = LED_FUNCTION_STATUS;
++			function = LED_FUNCTION_WLAN_2GHZ;
++			linux,default-trigger = "phy0tpt";
+ 		};
+ 
+-		led_mode: mode {
++		led_mesh: mesh {
+ 			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
+ 			color = <LED_COLOR_ID_BLUE>;
+-			function = LED_FUNCTION_STATUS;
++			function = "mesh";
+ 		};
+ 
+ 		led_wan: wan {
+-	            gpios = <&pio 13 GPIO_ACTIVE_LOW>;
++			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+ 			color = <LED_COLOR_ID_BLUE>;
+-			function = LED_FUNCTION_STATUS;
+-	        };
++			function = LED_FUNCTION_WAN;
++		};
+ 	};
+ };
+ 
+diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
+--- a/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
++++ b/target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
+@@ -40,6 +40,10 @@ cudy,wr3000-v1)
+ 	ucidef_set_led_netdev "wan" "wan" "blue:wan" "wan"
+ 	;;
++comfast,cf-wr630ax)
++	ucidef_set_led_netdev "wan" "WAN" "blue:wan" "eth1" "link tx rx"
++	;;
+ cudy,wr3000h-v1|\
+ cudy,wr3000p-v1)
+ 	ucidef_set_led_netdev "lan1" "lan1" "white:lan-1" "lan1" "link tx rx"
