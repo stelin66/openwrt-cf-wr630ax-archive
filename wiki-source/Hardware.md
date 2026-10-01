@@ -115,12 +115,7 @@ Factory + 0x0004 = primary Wi-Fi MAC
 Factory + 0x8000 = secondary Wi-Fi MAC
 ```
 
-On the tested unit:
-
-```text
-0x0004 → 40:a5:ef:45:cb:41
-0x8000 → 40:a5:ef:45:cb:42
-```
+On the tested unit, both offsets contained distinct valid MAC addresses. Exact device MAC addresses are intentionally omitted from the public wiki.
 
 The hardware-fix patch models these as NVMEM `mac-base` cells and assigns them per band:
 
@@ -140,16 +135,9 @@ band@1 {
 
 ### Runtime verification
 
-The NVMEM implementation was first tested in initramfs build #4 and then re-verified after permanent NAND installation. Linux reported:
+The NVMEM implementation was first tested in initramfs build #4, re-verified after permanent NAND installation, and verified again on the current-main RAM port. Linux assigned each radio the exact MAC stored in its respective Factory cell.
 
-```text
-phy0 40:a5:ef:45:cb:41
-phy1 40:a5:ef:45:cb:42
-```
-
-This is an exact match with the two Factory values above.
-
-The original support used a runtime hotplug rule for `phy1` that read `Factory + 0x8000` and then added one to the address. On this device that produced `40:a5:ef:45:cb:43`, which is not the value stored in Factory. The per-band NVMEM definition removes that workaround and restores the stored `...:42` address.
+The original support used a runtime hotplug rule for `phy1` that read `Factory + 0x8000` and then incremented that address. Hardware verification showed that this produced an address different from the value actually stored in Factory. The per-band NVMEM definition removes that workaround and uses the stored secondary address directly.
 
 ## WR632AX relationship
 
