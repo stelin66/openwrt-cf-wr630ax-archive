@@ -145,13 +145,27 @@ SHA256 0ccb08a90c756ed10df3ba317233e69fafb4203d11a1e7afabb062fb093ea1aa
 
 The sysupgrade image passed `sysupgrade -T`, was installed successfully, and LuCI was verified operational on the physical router.
 
-## Current OpenWrt main RAM verification
+## Current OpenWrt main RAM and NAND verification
 
-A separate port to current OpenWrt `main` was built and booted by TFTP/initramfs without writing NAND. The hardware session verified kernel 6.18.52, board identity, NAND/NMBM/UBI attach, all three LAN ports, WAN at 1 Gbit/s full duplex, both Wi-Fi radios with real associated clients, per-band NVMEM MAC assignment, all front-panel LEDs, and the WPS/Mesh button.
+A separate port to current OpenWrt `main` was first built and booted by TFTP/initramfs without writing NAND. The hardware session verified kernel 6.18.52, board identity, NAND/NMBM/UBI attach, all three LAN ports, WAN at 1 Gbit/s full duplex, both Wi-Fi radios with real associated clients, per-band NVMEM MAC assignment, all front-panel LEDs, and the WPS/Mesh button.
+
+The matching full build from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c` produced:
+
+```text
+factory.bin
+10747904 bytes
+SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+
+sysupgrade.bin
+9369879 bytes
+SHA256 610ae53e659a4c5a82308d6a01c2851751e372a53861f12b8087e0c1641b61b7
+```
+
+On the router, `sysupgrade -T` returned 0 and the sysupgrade image SHA256 matched again before installation. The image was installed with `sysupgrade -n` and rebooted as OpenWrt SNAPSHOT `r0+36743-c759267c92`, kernel 6.18.52, target `mediatek/filogic`, with `rootfs_type=squashfs`.
+
+After this current-main installation, direct reads of BL2, u-boot-env, Factory and FIP still produced exactly the same SHA256 values listed in the protected-partition section above.
 
 The full sanitized console/test record is preserved at [[Current-main-verification]].
-
-Permanent installation of the current-main port has **not** yet been tested.
 
 ## Completed installation gate
 
@@ -177,14 +191,18 @@ Permanent installation of the current-main port has **not** yet been tested.
 - [x] Normal reboot verified
 - [x] Cold boot without UART verified
 - [x] LuCI image verified
+- [x] Current-main initramfs hardware validation completed
+- [x] Current-main full factory/sysupgrade images built and inspected
+- [x] Current-main `sysupgrade -T` passed with exit status 0
+- [x] Current-main permanent NAND installation completed
+- [x] Current-main boot verified as `rootfs_type=squashfs`
+- [x] Protected MTD hashes re-verified unchanged after current-main flash
 
 ## Package ABI warning
 
-The installed firmware is a historical reproducible snapshot. Its distfeeds point to rolling OpenWrt snapshot repositories, but those repositories later moved to newer `libubox`, `libubus` and related ABIs.
+The project contains pinned OpenWrt snapshot builds. Snapshot package repositories are rolling, so repository packages can move to newer userspace or kernel ABIs after a firmware image was built.
 
-An attempted `apk add luci` correctly stopped with dependency conflicts before changing the system.
-
-Do not use `apk --force` or a general rolling-snapshot upgrade on this build. Extra userspace packages and especially `kmod-*` packages should be built against the exact same pinned source/feed set, or the WR630AX support should be ported to current OpenWrt main.
+On the historical image, an attempted `apk add luci` correctly stopped with dependency conflicts before changing the system. The same general snapshot rule still applies to the current-main installation: do not use `apk --force` to cross an ABI mismatch, and build `kmod-*` packages against the exact installed source revision.
 
 ## Recovery assets
 
