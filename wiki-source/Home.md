@@ -44,7 +44,7 @@ The goal is to preserve the original work, verify it against real hardware, fix 
 | Protected MTD partitions | ✅ | BL2, env, Factory and FIP byte-identical after sysupgrade |
 | Cold boot from NAND | ✅ | Normal U-Boot autoboot and OpenWrt startup verified |
 | LuCI image | ✅ | Pinned LuCI full build boots and web UI is operational |
-| Current OpenWrt main initramfs | ✅ | Kernel 6.18.52 boots on hardware; LAN/WAN, both radios, LEDs, WPS and NVMEM verified in RAM |
+| Current OpenWrt main / SNAPSHOT | ✅ | Kernel 6.18.52; RAM validation completed, then permanent NAND sysupgrade verified with `rootfs_type=squashfs` |
 
 ## Verified images
 
@@ -85,6 +85,22 @@ SHA256 0ccb08a90c756ed10df3ba317233e69fafb4203d11a1e7afabb062fb093ea1aa
 ```
 
 The LuCI sysupgrade image passed `sysupgrade -T`, was installed successfully, and the web interface was verified on the physical router. LuCI reports the board as **COMFAST CF-WR630AX**, target **mediatek/filogic**, kernel **6.12.55**.
+
+### Current-main full build #1
+
+GitHub Actions run **36863399195** completed successfully from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c`.
+
+```text
+factory.bin
+10747904 bytes
+SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+
+sysupgrade.bin
+9369879 bytes
+SHA256 610ae53e659a4c5a82308d6a01c2851751e372a53861f12b8087e0c1641b61b7
+```
+
+The sysupgrade image passed `sysupgrade -T` with exit status 0, matched its SHA256 again on the router, was installed with `sysupgrade -n`, and rebooted successfully from NAND. Runtime reports OpenWrt SNAPSHOT `r0+36743-c759267c92`, kernel **6.18.52**, target **mediatek/filogic**, and `rootfs_type=squashfs`. BL2, u-boot-env, Factory and FIP remained byte-identical to the verified backups after installation.
 
 ## Hardware-verified fixes
 
@@ -140,17 +156,17 @@ verify protected partitions remain byte-identical
 
 ## Current OpenWrt main port
 
-A first port to current OpenWrt `main` has now built successfully and booted on the physical router entirely from initramfs/RAM. Kernel 6.18.52, NMBM/UBI attach, LAN1–3, WAN, both Wi-Fi radios, per-band NVMEM MAC assignment, all four front-panel LEDs and the WPS/Mesh button were hardware-verified.
+The port to current OpenWrt `main` was first validated entirely from initramfs/RAM. Kernel 6.18.52, NMBM/UBI attach, LAN1–3, WAN, both Wi-Fi radios, per-band NVMEM MAC assignment, all four front-panel LEDs and the WPS/Mesh button were hardware-verified before any current-main NAND write.
 
-See [[Current-main-verification]] for the sanitized boot and hardware-test logs.
+The matching full sysupgrade image has now also been installed successfully. The router boots OpenWrt SNAPSHOT `r0+36743-c759267c92` from NAND with `rootfs_type=squashfs`, and all four protected MTD partitions still match their verified pre-install hashes.
 
-Permanent flashing of the current-main port has **not** yet been tested.
+See [[Current-main-verification]] for the sanitized boot, hardware-test and permanent-install records.
 
 ## Snapshot package warning
 
-This project intentionally reproduces an older OpenWrt snapshot using pinned source/feed commits. The generated `/etc/apk/repositories.d/distfeeds.list` points at rolling `downloads.openwrt.org/snapshots/` repositories, which later moved to newer package ABIs.
+Both the historical reproducible image and the verified current-main image are pinned snapshots. Snapshot package repositories continue moving after an image is built, so later package ABIs — especially kernel modules — may no longer match the installed snapshot.
 
-Do **not** force-install current rolling snapshot packages into this historical image. Matching extra packages or kernel modules should be built from the same pinned source/feed set, or the device should be ported to current OpenWrt main.
+Do **not** use forced package upgrades to cross an ABI mismatch. For reproducible additions, build packages against the same pinned OpenWrt source/feed set as the installed image.
 
 ## Important: CF-WR630AX is not CF-WR632AX firmware
 
