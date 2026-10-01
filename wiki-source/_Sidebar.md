@@ -13,6 +13,6 @@
 
 ---
 
-**Status:** historical NAND install verified / current-main RAM-tested
+**Status:** current OpenWrt main/SNAPSHOT verified from RAM and permanent NAND install
 
 ⚠️ Preserve the NAND **Factory** partition.
