@@ -6,12 +6,13 @@
 - [[Hardware]]
 - [[Hardware-modifications]]
 - [[Verification-and-safety]]
+- [[Current-main-verification]]
 
 **Project**
 - [[Provenance]]
 
 ---
 
-**Status:** experimental / RAM-tested
+**Status:** historical NAND install verified / current-main RAM-tested
 
 ⚠️ Preserve the NAND **Factory** partition.
