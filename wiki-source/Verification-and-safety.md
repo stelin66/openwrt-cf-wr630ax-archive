@@ -77,9 +77,11 @@ This verifies that the tested sysupgrade path changed the UBI system area withou
 Runtime result:
 
 ```text
-phy0 40:a5:ef:45:cb:41
-phy1 40:a5:ef:45:cb:42
+phy0 <redacted-2.4ghz-mac>
+phy1 <redacted-5ghz-mac>
 ```
+
+Exact device MAC addresses are intentionally omitted from the public wiki; both runtime values matched their respective Factory NVMEM cells exactly.
 
 ### LEDs and buttons
 
@@ -142,6 +144,14 @@ SHA256 0ccb08a90c756ed10df3ba317233e69fafb4203d11a1e7afabb062fb093ea1aa
 ```
 
 The sysupgrade image passed `sysupgrade -T`, was installed successfully, and LuCI was verified operational on the physical router.
+
+## Current OpenWrt main RAM verification
+
+A separate port to current OpenWrt `main` was built and booted by TFTP/initramfs without writing NAND. The hardware session verified kernel 6.18.52, board identity, NAND/NMBM/UBI attach, all three LAN ports, WAN at 1 Gbit/s full duplex, both Wi-Fi radios with real associated clients, per-band NVMEM MAC assignment, all front-panel LEDs, and the WPS/Mesh button.
+
+The full sanitized console/test record is preserved at [[Current-main-verification]].
+
+Permanent installation of the current-main port has **not** yet been tested.
 
 ## Completed installation gate
 
