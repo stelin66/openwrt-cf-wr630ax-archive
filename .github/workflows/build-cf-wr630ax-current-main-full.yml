@@ -1,0 +1,212 @@
+name: Build WR630AX current-main full images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - current-main-port
+    paths:
+      - 'current-main/**'
+      - '.github/workflows/build-cf-wr630ax-current-main-full.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cf-wr630ax-current-main-full
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OPENWRT_BASE: c759267c92b0697a6fd6f369164a5ed4c1a6a03c
+      DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+
+    steps:
+      - name: Checkout WR630AX archive branch
+        uses: actions/checkout@v4
+        with:
+          path: archive-repo
+
+      - name: Checkout pinned current OpenWrt main
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          ref: ${{ env.OPENWRT_BASE }}
+          fetch-depth: 0
+          path: openwrt
+
+      - name: Install build dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libncurses-dev libssl-dev python3 python3-setuptools \
+            python3-pyelftools libelf-dev rsync swig unzip zlib1g-dev zstd \
+            file wget ca-certificates u-boot-tools
+
+      - name: Apply current-main WR630AX port
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          test "$(git rev-parse HEAD)" = "$OPENWRT_BASE"
+          test ! -e target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          cp "$GITHUB_WORKSPACE/archive-repo/current-main/mt7981b-comfast-cf-wr630ax.dts" \
+             target/linux/mediatek/dts/
+          python3 "$GITHUB_WORKSPACE/archive-repo/current-main/apply-port.py"
+
+          grep -Fq 'model = "COMFAST CF-WR630AX";' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'linux,code = <KEY_WPS_BUTTON>;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'macaddr_factory_4: macaddr@4 {' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'macaddr_factory_8000: macaddr@8000 {' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'nvmem-cells = <&macaddr_factory_4 0>;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'nvmem-cells = <&macaddr_factory_8000 0>;' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'define Device/comfast_cf-wr630ax' target/linux/mediatek/image/filogic.mk
+          grep -Fq 'comfast,cf-wr630ax' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+          grep -Fq 'ucidef_set_led_netdev "wan" "WAN" "blue:wan" "eth1" "link tx rx"' \
+            target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
+          ! grep -Fq 'comfast,cf-wr630ax)' \
+            target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
+
+          git diff --check
+          git diff --stat
+          git diff > "$GITHUB_WORKSPACE/current-main-port.diff"
+
+      - name: Install exact feeds used by RAM-tested initramfs
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > feeds.conf <<'EOF'
+          src-git packages https://git.openwrt.org/feed/packages.git^95d73ebcc95ade2ea78b0a281898cf8b6ec7b7f9
+          src-git luci https://git.openwrt.org/project/luci.git^32775cf32b94ecf12bca08ce62aeb2723d2d51ce
+          src-git routing https://git.openwrt.org/feed/routing.git^4b9891b9136259f93294a424507ed24c5e8c1cbd
+          src-git telephony https://git.openwrt.org/feed/telephony.git^5d68d53c160a325ea9d03fce393e051573bcc736
+          src-git video https://github.com/openwrt/video.git^2baec75e2c07b3bb3ae3b73580a3bd3074818707
+          EOF
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          {
+            echo "Feeds pinned to the exact commits used by current-main initramfs run 36784301628:"
+            for feed in packages luci routing telephony video; do
+              echo "$feed=$(git -C "feeds/$feed" rev-parse HEAD)"
+            done
+          } | tee "$GITHUB_WORKSPACE/current-main-feed-commits.txt"
+
+      - name: Configure WR630AX current-main full images
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+          EOF
+          make defconfig
+          grep -Fxq 'CONFIG_TARGET_mediatek=y' .config
+          grep -Fxq 'CONFIG_TARGET_mediatek_filogic=y' .config
+          grep -Fxq "$DEVICE_CONFIG" .config
+          ! grep -Fxq 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' .config
+
+          # Current OpenWrt snapshot images do not include LuCI by default.
+          # Follow that default here instead of forcing a custom package set.
+          ! grep -Fxq 'CONFIG_PACKAGE_luci=y' .config
+
+          ./scripts/diffconfig.sh | tee "$GITHUB_WORKSPACE/diffconfig-current-main-full.txt"
+
+      - name: Download sources
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          make -j"$(nproc)" download
+
+      - name: Build current-main full images
+        run: |
+          set -euo pipefail
+          cd openwrt
+          if ! make -j"$(nproc)"; then
+            echo "::warning::Parallel build failed; rerunning serially with V=s"
+            make -j1 V=s
+          fi
+
+      - name: Verify and stage factory/sysupgrade images
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          out="bin/targets/mediatek/filogic"
+          stage="$GITHUB_WORKSPACE/wr630ax-current-main-full-artifacts"
+          test -d "$out"
+          mkdir -p "$stage"
+
+          shopt -s nullglob
+          factory=( "$out"/*comfast_cf-wr630ax*factory.bin )
+          sysupgrade=( "$out"/*comfast_cf-wr630ax*sysupgrade.bin )
+
+          if (( ${#factory[@]} != 1 )); then
+            echo "::error::Expected exactly one WR630AX factory.bin, found ${#factory[@]}"
+            find "$out" -maxdepth 1 -type f -printf '%f\n' | sort
+            exit 1
+          fi
+          if (( ${#sysupgrade[@]} != 1 )); then
+            echo "::error::Expected exactly one WR630AX sysupgrade.bin, found ${#sysupgrade[@]}"
+            find "$out" -maxdepth 1 -type f -printf '%f\n' | sort
+            exit 1
+          fi
+
+          factory_image="${factory[0]}"
+          sysupgrade_image="${sysupgrade[0]}"
+
+          # factory.bin is a UBI image.
+          magic="$(od -An -tx1 -N4 "$factory_image" | tr -d ' \n')"
+          test "$magic" = "55424923" || {
+            echo "::error::factory.bin does not begin with UBI# magic (got $magic)"
+            exit 1
+          }
+
+          # sysupgrade.bin must be a readable tar with WR630AX board control data.
+          tar -tf "$sysupgrade_image" | tee "$stage/SYSUPGRADE-TAR-LIST.txt"
+          control="$(tar -tf "$sysupgrade_image" | grep '/CONTROL$' | head -n1)"
+          test -n "$control"
+          tar -xOf "$sysupgrade_image" "$control" | tee "$stage/SYSUPGRADE-CONTROL.txt"
+          grep -Fq 'BOARD=comfast_cf-wr630ax' "$stage/SYSUPGRADE-CONTROL.txt"
+          tar -tf "$sysupgrade_image" | grep -Eq '/kernel$'
+          tar -tf "$sysupgrade_image" | grep -Eq '/root$'
+
+          cp "$factory_image" "$stage/"
+          cp "$sysupgrade_image" "$stage/"
+          cp .config "$stage/openwrt-current-main-full.config"
+          cp "$GITHUB_WORKSPACE/diffconfig-current-main-full.txt" "$stage/"
+          cp "$GITHUB_WORKSPACE/current-main-port.diff" "$stage/"
+          cp "$GITHUB_WORKSPACE/current-main-feed-commits.txt" "$stage/"
+          test -f "$out/profiles.json" && cp "$out/profiles.json" "$stage/"
+          test -f "$out/sha256sums" && cp "$out/sha256sums" "$stage/openwrt-target-sha256sums"
+
+          (
+            cd "$stage"
+            sha256sum "$(basename "$factory_image")" "$(basename "$sysupgrade_image")" | tee SHA256SUMS
+          )
+
+          {
+            echo "OpenWrt current-main base: $OPENWRT_BASE"
+            echo "Archive branch commit: ${GITHUB_SHA}"
+            echo "Device config: $DEVICE_CONFIG"
+            echo "Full images: factory.bin + sysupgrade.bin"
+            echo "LuCI: not forced; current OpenWrt snapshot default retained"
+            echo "Kernel load address: 0x44000000"
+            echo "DT load address: 0x43f00000"
+            echo
+            cat "$GITHUB_WORKSPACE/current-main-feed-commits.txt"
+            echo
+            stat -c '%n %s bytes' "$stage"/*factory.bin "$stage"/*sysupgrade.bin
+          } | tee "$stage/BUILD-METADATA.txt"
+
+      - name: Upload current-main full-image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cf-wr630ax-current-main-full-${{ github.run_number }}
+          path: wr630ax-current-main-full-artifacts/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
