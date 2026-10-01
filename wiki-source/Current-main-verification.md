@@ -839,7 +839,7 @@ Result: 5 GHz 802.11ax/HE, 80 MHz and 2 spatial streams were verified with a rea
 
 ## 2.4 GHz AP test
 
-A temporary WPA2-protected 2.4 GHz test AP was enabled, tested and then shut down.
+A temporary WPA2-protected 2.4 GHz test AP was enabled and tested. The temporary initramfs configuration did not persist into the later clean NAND installation.
 
 ```text
 Interface phy0-ap0
@@ -865,6 +865,74 @@ Station <redacted-client-mac> (on phy0-ap0)
 
 Result: 2.4 GHz 802.11ax/HE and 2 spatial streams were verified with a real associated client.
 
+## Permanent current-main installation
+
+After the RAM-only validation, full current-main images were built by GitHub Actions run **36863399195** from the same pinned OpenWrt source revision.
+
+Build result:
+
+```text
+openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-factory.bin
+10747904 bytes
+SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+
+openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
+9369879 bytes
+SHA256 610ae53e659a4c5a82308d6a01c2851751e372a53861f12b8087e0c1641b61b7
+```
+
+The workflow verified that the factory image begins with UBI magic and that the sysupgrade archive contains WR630AX control data, kernel and root entries. On the router, the sysupgrade image was copied to `/tmp`, re-hashed and matched the build artifact exactly.
+
+```text
+sysupgrade -T /tmp/openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
+verifying sysupgrade tar file integrity
+
+exit status: 0
+
+SHA256 on router:
+610ae53e659a4c5a82308d6a01c2851751e372a53861f12b8087e0c1641b61b7
+```
+
+The image was then installed with a clean `sysupgrade -n`. After reboot, OpenWrt reported:
+
+```json
+{
+    "kernel": "6.18.52",
+    "model": "COMFAST CF-WR630AX",
+    "board_name": "comfast,cf-wr630ax",
+    "rootfs_type": "squashfs",
+    "release": {
+        "distribution": "OpenWrt",
+        "version": "SNAPSHOT",
+        "revision": "r0+36743-c759267c92",
+        "target": "mediatek/filogic"
+    }
+}
+```
+
+The `squashfs` root confirms that this boot is from the installed NAND image, not initramfs.
+
+Post-install MTD layout:
+
+```text
+mtd0: 00100000 00020000 "BL2"
+mtd1: 00080000 00020000 "u-boot-env"
+mtd2: 00200000 00020000 "Factory"
+mtd3: 00200000 00020000 "FIP"
+mtd4: 04000000 00020000 "ubi"
+```
+
+The four protected partitions were read directly again after the current-main flash. Their SHA256 values remained identical to the previously verified backups:
+
+```text
+BL2       bfe6ef304f6a9b5e4f01f3e4ece18926ee9b1cb3f4a7f15c55fd24329176289f
+u-boot-env 9d280971245e94e8508a56522b75076c3a6150468c7f290783c521df64de3057
+Factory   bc1deae99f3509ec4f93eb45b65d970cef18f569efd22772ca58bfda26d4c545
+FIP       852bbc73d48c9ce246846f45e61aba267a6aab88640ccd5dd6fc8ff9deaba7af
+```
+
+Result: the tested current-main sysupgrade path replaced the OpenWrt UBI system while preserving BL2, u-boot-env, Factory calibration data and FIP byte-for-byte.
+
 ## Current-main verification status
 
 | Area | Result |
@@ -889,7 +957,7 @@ Result: 2.4 GHz 802.11ax/HE and 2 spatial streams were verified with a real asso
 | WAN LED | ✅ |
 | 2.4 GHz AP + real client | ✅ |
 | 5 GHz AP + real client | ✅ |
-| Permanent current-main flash | **not yet tested** |
+| Permanent current-main flash | ✅ |
 
 ## Known non-fatal warnings
 
@@ -904,6 +972,6 @@ Ethernet nevertheless initializes, the MT7531 CPU link comes up at 2.5 Gbit/s, a
 
 ## Safety boundary
 
-This current-main validation was intentionally performed from initramfs in RAM. The already-installed historical hardware-fixed OpenWrt image on NAND was not replaced during this test.
+The first current-main validation was intentionally performed from initramfs in RAM without writing NAND. Only after that hardware session passed were separate full factory/sysupgrade images built and inspected.
 
-The next flash-related gate should only be crossed after current-main full factory/sysupgrade images have been built and inspected separately.
+The current-main sysupgrade image has now passed `sysupgrade -T`, been installed to NAND, booted as a `squashfs` root filesystem, and the four protected MTD partitions have been re-verified byte-identical afterward. A later cold-power-cycle test can be recorded separately; it is not implied by the checks above.
