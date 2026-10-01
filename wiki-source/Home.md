@@ -44,6 +44,7 @@ The goal is to preserve the original work, verify it against real hardware, fix 
 | Protected MTD partitions | ✅ | BL2, env, Factory and FIP byte-identical after sysupgrade |
 | Cold boot from NAND | ✅ | Normal U-Boot autoboot and OpenWrt startup verified |
 | LuCI image | ✅ | Pinned LuCI full build boots and web UI is operational |
+| Current OpenWrt main initramfs | ✅ | Kernel 6.18.52 boots on hardware; LAN/WAN, both radios, LEDs, WPS and NVMEM verified in RAM |
 
 ## Verified images
 
@@ -100,14 +101,14 @@ Verified corrections include:
 - WAN LED bound to `eth1` link/activity
 - Wi-Fi MACs moved from a runtime hotplug workaround to per-band NVMEM cells
 
-The Factory data measured on the test unit is:
+The Factory data measured on the test unit confirms two distinct per-band MAC cells:
 
-| Radio | Factory offset | Stored/tested address |
+| Radio | Factory offset | Runtime result |
 |---|---:|---|
-| `phy0` | `0x0004` | `40:a5:ef:45:cb:41` |
-| `phy1` | `0x8000` | `40:a5:ef:45:cb:42` |
+| `phy0` | `0x0004` | exact stored address used |
+| `phy1` | `0x8000` | exact stored address used |
 
-The old runtime workaround incremented the MAC at `0x8000`, producing `...:43`. The NVMEM fix uses the stored secondary address directly and remains correct after permanent installation.
+Exact device MAC addresses are intentionally omitted from the public wiki. The old runtime workaround incremented the address stored at `0x8000`; the NVMEM fix instead uses the stored secondary address directly and remains correct after permanent installation.
 
 ## Verified installation path
 
@@ -137,6 +138,14 @@ normal reboot + cold boot
 verify protected partitions remain byte-identical
 ```
 
+## Current OpenWrt main port
+
+A first port to current OpenWrt `main` has now built successfully and booted on the physical router entirely from initramfs/RAM. Kernel 6.18.52, NMBM/UBI attach, LAN1–3, WAN, both Wi-Fi radios, per-band NVMEM MAC assignment, all four front-panel LEDs and the WPS/Mesh button were hardware-verified.
+
+See [[Current-main-verification]] for the sanitized boot and hardware-test logs.
+
+Permanent flashing of the current-main port has **not** yet been tested.
+
 ## Snapshot package warning
 
 This project intentionally reproduces an older OpenWrt snapshot using pinned source/feed commits. The generated `/etc/apk/repositories.d/distfeeds.list` points at rolling `downloads.openwrt.org/snapshots/` repositories, which later moved to newer package ABIs.
@@ -165,4 +174,4 @@ See [[Provenance]] for the full archival record.
 
 ---
 
-**Next:** [[Hardware]] · [[Hardware-modifications]] · [[Verification-and-safety]] · [[Provenance]]
+**Next:** [[Hardware]] · [[Hardware-modifications]] · [[Verification-and-safety]] · [[Current-main-verification]] · [[Provenance]]
