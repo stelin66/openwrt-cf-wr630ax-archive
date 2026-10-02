@@ -1,0 +1,140 @@
+name: Validate WR630AX upstream branch
+
+on:
+  push:
+    branches:
+      - upstream-validation
+    paths:
+      - '.github/workflows/validate-wr630ax-upstream.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cf-wr630ax-upstream-validation
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OPENWRT_REPO: stelin66/openwrt
+      OPENWRT_REF: mediatek-filogic-cf-wr630ax
+      DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+
+    steps:
+      - name: Checkout archive helper branch
+        uses: actions/checkout@v4
+        with:
+          path: archive-repo
+
+      - name: Checkout upstream candidate
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OPENWRT_REPO }}
+          ref: ${{ env.OPENWRT_REF }}
+          fetch-depth: 0
+          path: openwrt
+
+      - name: Record source
+        run: |
+          set -euxo pipefail
+          git -C openwrt rev-parse HEAD | tee source-commit.txt
+          git -C openwrt show --stat --oneline --decorate -1
+          git -C openwrt diff --check HEAD^ HEAD
+
+      - name: Install build dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             build-essential clang flex bison g++ gawk gcc-multilib g++-multilib             gettext git libncurses-dev libssl-dev python3 python3-setuptools             python3-pyelftools libelf-dev rsync swig unzip zlib1g-dev zstd             file wget ca-certificates u-boot-tools
+
+      - name: Update and install current feeds
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          {
+            echo "OpenWrt=$(git rev-parse HEAD)"
+            for feed in packages luci routing telephony video; do
+              if [ -d "feeds/$feed/.git" ]; then
+                echo "$feed=$(git -C "feeds/$feed" rev-parse HEAD)"
+              fi
+            done
+          } | tee "$GITHUB_WORKSPACE/feed-commits.txt"
+
+      - name: Configure device
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+          EOF
+          make defconfig
+          grep -Fxq "$DEVICE_CONFIG" .config
+          ./scripts/diffconfig.sh | tee "$GITHUB_WORKSPACE/diffconfig.txt"
+
+      - name: Download sources
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          make -j"$(nproc)" download
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          cd openwrt
+          if ! make -j"$(nproc)"; then
+            echo "::warning::Parallel build failed; rerunning serially with V=s"
+            make -j1 V=s
+          fi
+
+      - name: Verify WR630AX images
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          out="bin/targets/mediatek/filogic"
+          stage="$GITHUB_WORKSPACE/wr630ax-upstream-validation"
+          mkdir -p "$stage"
+
+          shopt -s nullglob
+          factory=( "$out"/*comfast_cf-wr630ax*factory.bin )
+          sysupgrade=( "$out"/*comfast_cf-wr630ax*sysupgrade.bin )
+
+          test "${#factory[@]}" -eq 1
+          test "${#sysupgrade[@]}" -eq 1
+
+          magic="$(od -An -tx1 -N4 "${factory[0]}" | tr -d ' \n')"
+          test "$magic" = "55424923"
+
+          tar -tf "${sysupgrade[0]}" | tee "$stage/SYSUPGRADE-TAR-LIST.txt"
+          control="$(tar -tf "${sysupgrade[0]}" | grep '/CONTROL$' | head -n1)"
+          test -n "$control"
+          tar -xOf "${sysupgrade[0]}" "$control" | tee "$stage/SYSUPGRADE-CONTROL.txt"
+          grep -Fq 'BOARD=comfast_cf-wr630ax' "$stage/SYSUPGRADE-CONTROL.txt"
+          tar -tf "${sysupgrade[0]}" | grep -Eq '/kernel$'
+          tar -tf "${sysupgrade[0]}" | grep -Eq '/root$'
+
+          cp "${factory[0]}" "${sysupgrade[0]}" "$stage/"
+          cp "$GITHUB_WORKSPACE/source-commit.txt" "$stage/"
+          cp "$GITHUB_WORKSPACE/feed-commits.txt" "$stage/"
+          cp "$GITHUB_WORKSPACE/diffconfig.txt" "$stage/"
+          test -f "$out/profiles.json" && cp "$out/profiles.json" "$stage/"
+          (
+            cd "$stage"
+            sha256sum *factory.bin *sysupgrade.bin | tee SHA256SUMS
+          )
+
+      - name: Upload validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cf-wr630ax-upstream-validation-${{ github.run_number }}
+          path: wr630ax-upstream-validation/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
