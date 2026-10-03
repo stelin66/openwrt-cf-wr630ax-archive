@@ -115,7 +115,10 @@ SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
 
 U-Boot `iminfo` verified all FIT hashes before boot.
 
-## Verified permanent full build
+## Historical verified permanent full build
+
+The image lists in this section record earlier hardware-validation builds.
+They are retained for auditability and are not the current upstream image set.
 
 ```text
 factory.bin
@@ -129,7 +132,7 @@ SHA256 7ad1a79edf6d419594e837d900e16e00eed81d55e27dc583853759d693fc84be
 
 The sysupgrade tar contained `CONTROL`, `kernel` and `root`; `sysupgrade -T` returned 0 before installation.
 
-## Verified LuCI build #1
+## Historical verified LuCI build #1
 
 GitHub Actions run **36767167724** completed successfully with the same pinned OpenWrt base, feeds and hardware-fix patch, plus `CONFIG_PACKAGE_luci=y`.
 
@@ -149,7 +152,7 @@ The sysupgrade image passed `sysupgrade -T`, was installed successfully, and LuC
 
 A separate port to current OpenWrt `main` was first built and booted by TFTP/initramfs without writing NAND. The hardware session verified kernel 6.18.52, board identity, NAND/NMBM/UBI attach, all three LAN ports, WAN at 1 Gbit/s full duplex, both Wi-Fi radios with real associated clients, per-band NVMEM MAC assignment, all front-panel LEDs, and the WPS/Mesh button.
 
-The matching full build from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c` produced:
+The historical full validation build from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c` produced:
 
 ```text
 factory.bin
