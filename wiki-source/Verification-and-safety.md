@@ -216,11 +216,8 @@ The stock bootloader provides:
 
 The OEM backups provide an additional recovery reference, including two identical independent reads of the unique Factory partition.
 
-## Factory partition vs OpenWrt factory image
+## Factory partition safety
 
-These names are easy to confuse:
-
-- **NAND `Factory` partition** → calibration/MAC data; preserve it.
-- **OpenWrt `factory.bin`** → an installation image format.
-
-They are completely different things.
+The NAND **Factory** partition contains device-specific calibration and MAC
+data. Preserve it exactly: do not erase it, format it, or write an OpenWrt
+image to it.
