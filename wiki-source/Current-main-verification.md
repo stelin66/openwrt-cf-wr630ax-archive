@@ -570,16 +570,16 @@ After the RAM-only validation, full current-main images were built by GitHub Act
 Build result:
 
 ```text
-openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-factory.bin
-10747904 bytes
-SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+kernel.bin
+4703880 bytes
+SHA256 ecdba4eee1e69647a96faf300aae60929ecd7d9d92652c7701b1f5ee68ee879f
 
 openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
 9369879 bytes
 SHA256 610ae53e659a4c5a82308d6a01c2851751e372a53861f12b8087e0c1641b61b7
 ```
 
-The workflow verified that the factory image begins with UBI magic and that the sysupgrade archive contains WR630AX control data, kernel and root entries. On the router, the sysupgrade image was copied to `/tmp`, re-hashed and matched the build artifact exactly.
+The kernel value above was extracted from the sysupgrade archive. The workflow verified that the sysupgrade archive contains WR630AX control data, kernel and root entries. On the router, the sysupgrade image was copied to `/tmp`, re-hashed and matched the build artifact exactly.
 
 ```text
 sysupgrade -T /tmp/openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
@@ -659,126 +659,44 @@ Result: the tested current-main sysupgrade path replaced the OpenWrt UBI system 
 
 ## Upstream-submission validation — 2026-10-03
 
-A separate upstream-candidate branch in My OpenWrt fork was validated with a dedicated GitHub Actions workflow before any pull request was opened.
-
-The first three validation attempts did not produce a usable artifact. The decisive failure in attempt 3 was not a DTS compilation failure: the WR630AX DTB was built successfully, but the later FIT step received an empty DTS filename and tried to open `image-.dtb`.
-
-The cause was premature Make expansion in the WR630AX `Device/...` image definition. The broken form was:
-
-```make
-fit lzma $(KDIR)/image-$(firstword $(DEVICE_DTS)).dtb
-```
-
-The corrected OpenWrt-style deferred expansion is:
-
-```make
-fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
-```
-
-The factory-image size check was normalized at the same time:
-
-```make
-IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
-```
-
-Two earlier commits whose messages claimed to fix the expansion were later verified to contain no file changes. The first commit that actually changed the file as intended was:
+The final upstream submission is OpenWrt pull request
+[#25580](https://github.com/openwrt/openwrt/pull/25580):
 
 ```text
-c548953863d231ff83394078681aff40cb1618ad
+Title: mediatek: add support for COMFAST CF-WR630AX
+Branch: mediatek-filogic-cf-wr630ax-final
+Current PR commit: 8291980c3ad071ffdc01c944ffa77ddf7514aa7e
+Source tree: c7e20da73eaab25732fe0977cab3335ef9b3fa1b
+Files changed: 5
+Commits: 1
 ```
 
-GitHub Actions run **36947965104**, attempt 4, then completed successfully. The build, image-verification and artifact-upload steps all passed.
+The PR commit is authored and committed by
+`Stefan Lindholm <openwrt@stli.se>`. The commit message preserves the
+original `Signed-off-by: dingjie <DW22965391@outlook.com>`, explicitly
+credits dingjie as the original WR630AX device-support author, credits ddf29
+as the earlier PR submitter, and includes Stefan's own sign-off.
 
-Validation artifact:
+Before submission, the identical source tree was rebuilt and validated in
+GitHub Actions run **37147860083** from validation commit
+`59d74b047a6efc21330612b7d3cd371e57a49898`. The later author-metadata
+correction changed the commit object only; the source tree remained
+`c7e20da73eaab25732fe0977cab3335ef9b3fa1b`.
+
+Final validation images:
 
 ```text
-Artifact name: cf-wr630ax-upstream-validation-1
-Artifact ID:   11260965989
-ZIP SHA256:    9bbe04c0ad7318a5b11b614ce559663a8b771e319a4d65393fa8ae134e4725e5
+openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
+SHA256 4e90d99d91f5d8f19b8dbc5877cf0d49d61f0cfad727aa7729058bccc0f6ba01
+
+openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
+SHA256 9878e15ba8f7ac97490aacce63bb22f0f4e62cb7fdc723fc174fe55d536de7e1
 ```
 
-The uploaded images were independently inspected after the workflow completed:
-
-```text
-factory.bin
-10747904 bytes
-SHA256 5ada98a0b0980f41a34f761fe826dd0d1723af08cfdd746234fe71cce2d7db71
-first four bytes: 55 42 49 23 ("UBI#")
-
-sysupgrade.bin
-9380117 bytes
-SHA256 ab79d2ab7145f6947212e6e9aa31eabf6146be0baf5740d40ba58eaaaf57b2c6
-```
-
-The sysupgrade tar was valid and contained `CONTROL`, `kernel` and `root`. Its control data contained:
-
-```text
-BOARD=comfast_cf-wr630ax
-```
-
-Extracted sysupgrade members:
-
-```text
-kernel
-4707012 bytes
-SHA256 3c981770218444644bc87633ddff23879e8a33a19d4a0b19076447af40f38d22
-
-root
-4661248 bytes
-SHA256 6d0a0b4a94d344f88856609885cf7011c8b8bec1534c595fb896efa6c33fa043
-```
-
-The validation build used Linux **6.18.54**.
-
-After this successful validation, upstream OpenWrt `main` was re-checked at:
-
-```text
-9b95be917b2804cf877ca05c078175b37a3a95bf
-```
-
-The candidate was 16 upstream commits behind that revision, and none of those 16 commits touched the five WR630AX support files. A clean rebased validation commit was therefore created directly on that upstream revision:
-
-```text
-75cc41b4fac56a27cb54a724b8bf13fb02d26d70
-```
-
-It is a single commit ahead of `9b95be917...` and changes exactly the five WR630AX support files. It is currently carried on the temporary branch:
-
-```text
-mediatek-filogic-cf-wr630ax-rebased-validation
-```
-
-The fresh rebased validation then completed successfully in GitHub Actions run **37088290475**.
-
-Validation artifact:
-
-```text
-Artifact name: cf-wr630ax-upstream-validation-2
-Artifact ID:   11262604202
-ZIP SHA256:    554101b7da7090f7d02410e84d3d9bb922f4562483a69e18b49b032920298c03
-```
-
-The rebased validation commit and the final upstream commit use the same source tree:
-
-```text
-tree 2599cae8db0d89a4e33e2fa9f48ca57533ae7017
-```
-
-A clean final DCO-correct commit was then created directly on the same upstream base:
-
-```text
-3ff5bab34f094fbd3773d1f6ba3877c7a3d9e33b
-```
-
-Final branch:
-
-```text
-mediatek-filogic-cf-wr630ax-final
-```
-
-The final commit is exactly one commit ahead of `9b95be917...`, changes exactly the five WR630AX support files, and is authored and committed as `Stefan Lindholm <openwrt@stli.se>` with the matching `Signed-off-by`. Its commit message also contains the verified hardware specification and installation procedure.
-
-No OpenWrt pull request has been opened yet.
+The validation asserted that the final device profile emits the sysupgrade
+image and initramfs recovery image, with no WR630AX factory image. Standard
+and strict `checkpatch` validation passed, and the full mediatek/filogic
+build completed successfully.
 
 ## Known non-fatal warnings
 
@@ -789,10 +707,10 @@ mtk_soc_eth 15100000.ethernet: legacy DT: using hard-coded SRAM offset.
 mtk_soc_eth 15100000.ethernet: legacy DT: missing interrupt-names.
 ```
 
-Ethernet nevertheless initializes, the MT7531 CPU link comes up at 2.5 Gbit/s, all three LAN ports work, and WAN links at 1 Gbit/s full duplex. These warnings are retained here because they are useful cleanup targets for the upstream-quality DTS.
+Ethernet nevertheless initializes, the MT7531 CPU link comes up at 2.5 Gbit/s, all three LAN ports work, and WAN links at 1 Gbit/s full duplex. These warnings are emitted by the shared MediaTek Ethernet DT/driver path and did not affect WR630AX operation during hardware verification. They are recorded here as runtime context, not as board-specific failures.
 
 ## Safety boundary
 
-The first current-main validation was intentionally performed from initramfs in RAM without writing NAND. Only after that hardware session passed were separate full factory/sysupgrade images built and inspected.
+The first current-main validation was intentionally performed from initramfs in RAM without writing NAND. Only after that hardware session passed was the full sysupgrade image built, inspected and installed.
 
-The current-main sysupgrade image has now passed `sysupgrade -T`, been installed to NAND, booted as a `squashfs` root filesystem, and the four protected MTD partitions have been re-verified byte-identical afterward. A later cold-power-cycle test can be recorded separately; it is not implied by the checks above.
+The current-main sysupgrade image passed `sysupgrade -T`, was installed to NAND, booted as a `squashfs` root filesystem, and the four protected MTD partitions were re-verified byte-identical afterward. A later cold boot with the enclosure assembled and UART disconnected also completed normally.
