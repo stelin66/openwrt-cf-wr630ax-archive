@@ -3,7 +3,7 @@ name: Validate WR630AX upstream branch
 on:
   push:
     branches:
-      - wr630ax-sysupgrade-validation
+      - wr630ax-final-validation
     paths:
       - '.github/workflows/validate-wr630ax-upstream.yml'
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cf-wr630ax-upstream-validation
+  group: cf-wr630ax-final-validation
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 360
     env:
       OPENWRT_REPO: stelin66/openwrt
-      OPENWRT_REF: mediatek-filogic-cf-wr630ax-sysupgrade-validation
+      OPENWRT_REF: mediatek-filogic-cf-wr630ax-final
       DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
 
     steps:
