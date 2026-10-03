@@ -1,4 +1,5 @@
 name: Audit WR630AX upstream submission
+# Re-run after final file-mode normalization
 
 on:
   push:
