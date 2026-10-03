@@ -117,6 +117,10 @@ Verified NAND layout:
 0x580000  0x4000000 ubi
 ```
 
+> [!CAUTION]
+> The NAND partition named **Factory** contains Wi-Fi calibration and
+> device-specific MAC data. Do not erase or write it.
+
 BL2, u-boot-env, Factory and FIP remained byte-identical after the verified
 sysupgrade. The detailed hashes and checks are in
 **[Verification and safety](https://github.com/stelin66/openwrt-cf-wr630ax-archive/wiki/Verification-and-safety)**.
