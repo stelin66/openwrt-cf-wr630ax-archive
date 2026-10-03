@@ -65,9 +65,9 @@ SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
 GitHub Actions run **36767167724** completed successfully.
 
 ```text
-factory.bin
-10878976 bytes
-SHA256 86911460d89a00b2b73c17a4c67c51284bb0c0ed78d645e58bcc38196d3448b6
+kernel.bin
+4485308 bytes
+SHA256 6b9ef0a625f27f3abc35319cba6b09f853525d71b598576bef6aae33a9c2b539
 
 sysupgrade.bin
 9502999 bytes
