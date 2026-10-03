@@ -1,5 +1,5 @@
 name: Validate WR630AX final upstream branch
-# Re-run after final install/provenance refinement
+# Build exact final candidate 59d74b047a6efc21330612b7d3cd371e57a49898
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 360
     env:
       OPENWRT_REPO: stelin66/openwrt
-      OPENWRT_REF: mediatek-filogic-cf-wr630ax-final
+      OPENWRT_REF: 59d74b047a6efc21330612b7d3cd371e57a49898
       DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
 
     steps:
@@ -43,6 +43,7 @@ jobs:
         run: |
           set -euxo pipefail
           git -C openwrt rev-parse HEAD | tee source-commit.txt
+          test "$(git -C openwrt rev-parse HEAD)" = "$OPENWRT_REF"
           git -C openwrt show --stat --oneline --decorate -1
           git -C openwrt diff --check HEAD^ HEAD
 
