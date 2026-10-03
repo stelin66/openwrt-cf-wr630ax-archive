@@ -128,7 +128,7 @@ Exact device MAC addresses are intentionally omitted from the public wiki. The o
 
 ## Recommended installation
 
-For a router still running the COMFAST stock firmware, the recommended normal installation path is the stock COMFAST firmware-update WebUI using the OpenWrt **sysupgrade** image:
+For a router still running the COMFAST stock firmware, connect a computer to a LAN port and open `http://192.168.0.1/`. The recommended normal installation path is the stock COMFAST firmware-update WebUI using the OpenWrt **sysupgrade** image:
 
 ```text
 openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
