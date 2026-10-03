@@ -48,6 +48,46 @@ The resulting OpenWrt UBI layout on the verified unit is:
 
 The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-block handling.
 
+## Enclosure access and UART
+
+The verified first-installation path requires access to the stock U-Boot serial console, so the enclosure must be opened.
+
+The underside of the enclosure has four recessed screws. After removing the bottom cover, the UART header is visible on the PCB next to the heatsink.
+
+The PCB silkscreen labels the four UART pads:
+
+```text
+VCC  GND  RX  TX
+```
+
+> [!CAUTION]
+> The UART uses **3.3 V TTL signalling**, but the USB-UART adapter must **not** power the router.
+> Connect **GND, RX and TX only**. Leave **VCC completely disconnected**.
+
+USB-UART wiring:
+
+```text
+Router TX  -> USB-UART RX
+Router RX  -> USB-UART TX
+Router GND <-> USB-UART GND
+VCC        -> DO NOT CONNECT
+```
+
+Serial settings:
+
+```text
+115200 baud
+8 data bits
+no parity
+1 stop bit
+```
+
+The router is powered from its normal DC power supply while the USB-UART adapter provides only the serial connection.
+
+The tested installation path uses this UART connection to interrupt U-Boot autoboot, load the OpenWrt initramfs image over TFTP, and boot OpenWrt entirely from RAM before any NAND write is performed.
+
+Direct installation from the stock COMFAST web interface has **not** been verified.
+
 ## U-Boot
 
 Observed bootloader:
