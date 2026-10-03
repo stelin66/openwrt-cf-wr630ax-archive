@@ -48,9 +48,9 @@ The resulting OpenWrt UBI layout on the verified unit is:
 
 The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-block handling.
 
-## Opening the enclosure
+## Recovery / unbrick: opening the enclosure
 
-The verified first-installation path requires access to the stock U-Boot serial console, so the enclosure must be opened.
+Opening the enclosure is **not required for a normal OpenWrt installation**. This section documents the verified UART/U-Boot recovery and unbrick path in case the normal firmware upgrade path is unavailable or the router no longer boots normally.
 
 ![CF-WR630AX underside showing the four recessed enclosure screws](https://raw.githubusercontent.com/stelin66/openwrt-cf-wr630ax-archive/main/wiki-source/images/back.jpg)
 
@@ -73,9 +73,9 @@ Once opened, the PCB, heatsink, antenna wiring and UART header are directly acce
 
 *Opened CF-WR630AX showing the PCB, heatsink and antenna wiring.*
 
-## UART
+## Recovery / unbrick: UART
 
-The UART header is located next to the heatsink.
+The UART header is located next to the heatsink and is intended here as a recovery/unbrick interface.
 
 ![CF-WR630AX PCB with the UART header highlighted](https://raw.githubusercontent.com/stelin66/openwrt-cf-wr630ax-archive/main/wiki-source/images/bord.jpg)
 
@@ -115,9 +115,9 @@ no parity
 
 The router is powered from its normal DC power supply while the USB-UART adapter provides only the serial connection.
 
-The tested first-installation path uses this UART connection to interrupt U-Boot autoboot, load the OpenWrt initramfs image over TFTP, and boot OpenWrt entirely from RAM before any NAND write is performed.
+The verified recovery/unbrick path uses this UART connection to interrupt U-Boot autoboot, load the OpenWrt initramfs image over TFTP, and boot OpenWrt entirely from RAM without writing NAND.
 
-Direct installation from the stock COMFAST web interface has **not** been verified.
+For normal installation, opening the enclosure and using UART are not required.
 
 ## U-Boot
 
