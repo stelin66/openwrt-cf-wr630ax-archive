@@ -1,0 +1,99 @@
+name: Audit WR630AX upstream submission
+
+on:
+  push:
+    branches:
+      - wr630ax-final-audit
+    paths:
+      - '.github/workflows/audit-wr630ax-upstream.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout final OpenWrt candidate
+        uses: actions/checkout@v4
+        with:
+          repository: stelin66/openwrt
+          ref: mediatek-filogic-cf-wr630ax-final
+          fetch-depth: 0
+
+      - name: Record candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git rev-parse HEAD
+          git rev-parse HEAD^
+          git show --format=fuller --stat --oneline HEAD
+          git diff --check HEAD^ HEAD
+
+      - name: OpenWrt checkpatch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ./scripts/checkpatch.pl --show-types -g HEAD
+
+      - name: OpenWrt strict checkpatch advisory
+        shell: bash
+        run: |
+          set -uo pipefail
+          ./scripts/checkpatch.pl --strict --show-types -g HEAD | tee /tmp/checkpatch-strict.txt
+          rc=${PIPESTATUS[0]}
+          echo "strict_checkpatch_exit=$rc"
+          exit 0
+
+      - name: Submission checklist
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          subject="$(git show -s --format='%s' HEAD)"
+          test "${#subject}" -lt 50
+
+          git show -s --format='%B' HEAD | awk '
+            length($0) >= 75 {
+              print "commit-message line too long: " length($0) ": " $0
+              bad=1
+            }
+            END { exit bad }
+          '
+
+          test "$(git show -s --format='%an <%ae>' HEAD)" =             'dingjie <DW22965391@outlook.com>'
+          test "$(git show -s --format='%cn <%ce>' HEAD)" =             'Stefan Lindholm <openwrt@stli.se>'
+
+          git show -s --format='%B' HEAD |             grep -Fxq 'Signed-off-by: dingjie <DW22965391@outlook.com>'
+          git show -s --format='%B' HEAD |             grep -Fxq 'Signed-off-by: Stefan Lindholm <openwrt@stli.se>'
+
+          for section in             'Hardware specification'             'Flash instructions'             'MAC address layout'
+          do
+            git show -s --format='%B' HEAD | grep -Fxq "$section"
+          done
+
+          expected="$(mktemp)"
+          actual="$(mktemp)"
+          cat > "$expected" <<'EOF'
+          package/boot/uboot-tools/uboot-envtools/files/mediatek_filogic
+          target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          target/linux/mediatek/filogic/base-files/etc/board.d/01_leds
+          target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+          target/linux/mediatek/image/filogic.mk
+          EOF
+          sort -o "$expected" "$expected"
+          git diff --name-only HEAD^ HEAD | sort > "$actual"
+          diff -u "$expected" "$actual"
+
+          dts=target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq '// SPDX-License-Identifier:' "$dts"
+          ! grep -Fq 'mediatek,mtd-eeprom' "$dts"
+          grep -Fq 'nvmem-cell-names = "mac-address";' "$dts"
+
+          block="$(sed -n             '/^define Device\/comfast_cf-wr630ax$/,/^endef$/p'             target/linux/mediatek/image/filogic.mk)"
+          ! grep -Fq 'factory.bin' <<<"$block"
+          grep -Fxq             '  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata'             <<<"$block"
+          grep -Fxq '  SUPPORTED_DEVICES += cf-wr630ax' <<<"$block"
+
+          echo "Submission checklist passed."
