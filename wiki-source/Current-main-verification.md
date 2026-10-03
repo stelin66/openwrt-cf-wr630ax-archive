@@ -959,6 +959,100 @@ Result: the tested current-main sysupgrade path replaced the OpenWrt UBI system 
 | 5 GHz AP + real client | ✅ |
 | Permanent current-main flash | ✅ |
 
+
+## Upstream-submission validation — 2026-10-03
+
+A separate upstream-candidate branch in Stefan's OpenWrt fork was validated with a dedicated GitHub Actions workflow before any pull request was opened.
+
+The first three validation attempts did not produce a usable artifact. The decisive failure in attempt 3 was not a DTS compilation failure: the WR630AX DTB was built successfully, but the later FIT step received an empty DTS filename and tried to open `image-.dtb`.
+
+The cause was premature Make expansion in the WR630AX `Device/...` image definition. The broken form was:
+
+```make
+fit lzma $(KDIR)/image-$(firstword $(DEVICE_DTS)).dtb
+```
+
+The corrected OpenWrt-style deferred expansion is:
+
+```make
+fit lzma $(KDIR)/image-$(firstword $(DEVICE_DTS)).dtb
+```
+
+The factory-image size check was normalized at the same time:
+
+```make
+IMAGE/factory.bin := append-ubi | check-size $$(IMAGE_SIZE)
+```
+
+Two earlier commits whose messages claimed to fix the expansion were later verified to contain no file changes. The first commit that actually changed the file as intended was:
+
+```text
+c548953863d231ff83394078681aff40cb1618ad
+```
+
+GitHub Actions run **36947965104**, attempt 4, then completed successfully. The build, image-verification and artifact-upload steps all passed.
+
+Validation artifact:
+
+```text
+Artifact name: cf-wr630ax-upstream-validation-1
+Artifact ID:   11260965989
+ZIP SHA256:    9bbe04c0ad7318a5b11b614ce559663a8b771e319a4d65393fa8ae134e4725e5
+```
+
+The uploaded images were independently inspected after the workflow completed:
+
+```text
+factory.bin
+10747904 bytes
+SHA256 5ada98a0b0980f41a34f761fe826dd0d1723af08cfdd746234fe71cce2d7db71
+first four bytes: 55 42 49 23 ("UBI#")
+
+sysupgrade.bin
+9380117 bytes
+SHA256 ab79d2ab7145f6947212e6e9aa31eabf6146be0baf5740d40ba58eaaaf57b2c6
+```
+
+The sysupgrade tar was valid and contained `CONTROL`, `kernel` and `root`. Its control data contained:
+
+```text
+BOARD=comfast_cf-wr630ax
+```
+
+Extracted sysupgrade members:
+
+```text
+kernel
+4707012 bytes
+SHA256 3c981770218444644bc87633ddff23879e8a33a19d4a0b19076447af40f38d22
+
+root
+4661248 bytes
+SHA256 6d0a0b4a94d344f88856609885cf7011c8b8bec1534c595fb896efa6c33fa043
+```
+
+The validation build used Linux **6.18.54**.
+
+After this successful validation, upstream OpenWrt `main` was re-checked at:
+
+```text
+9b95be917b2804cf877ca05c078175b37a3a95bf
+```
+
+The candidate was 16 upstream commits behind that revision, and none of those 16 commits touched the five WR630AX support files. A clean rebased validation commit was therefore created directly on that upstream revision:
+
+```text
+75cc41b4fac56a27cb54a724b8bf13fb02d26d70
+```
+
+It is a single commit ahead of `9b95be917...` and changes exactly the five WR630AX support files. It is currently carried on the temporary branch:
+
+```text
+mediatek-filogic-cf-wr630ax-rebased-validation
+```
+
+This rebased candidate must complete a fresh validation build before the temporary/WIP history is replaced by the final DCO-correct upstream commit. No OpenWrt pull request has been opened yet.
+
 ## Known non-fatal warnings
 
 The current-main kernel prints:
