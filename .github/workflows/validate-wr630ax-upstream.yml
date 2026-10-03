@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 360
     env:
       OPENWRT_REPO: stelin66/openwrt
-      OPENWRT_REF: mediatek-filogic-cf-wr630ax
+      OPENWRT_REF: mediatek-filogic-cf-wr630ax-rebased-validation
       DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
 
     steps:
