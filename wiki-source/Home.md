@@ -126,7 +126,21 @@ The Factory data measured on the test unit confirms two distinct per-band MAC ce
 
 Exact device MAC addresses are intentionally omitted from the public wiki. The old runtime workaround incremented the address stored at `0x8000`; the NVMEM fix instead uses the stored secondary address directly and remains correct after permanent installation.
 
-## Verified installation path
+## Recommended installation
+
+For a router still running the COMFAST stock firmware, the recommended normal installation path is the stock COMFAST firmware-update WebUI using the OpenWrt **sysupgrade** image:
+
+```text
+openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
+```
+
+Opening the enclosure is not required for normal installation. The OpenWrt **kernel/initramfs** image together with UART/TFTP is retained as a recovery/unbrick path.
+
+The COMFAST stock WR630AX firmware itself uses the OpenWrt sysupgrade tar format and the legacy board identifier `cf-wr630ax`. The OpenWrt device definition therefore carries that legacy identifier for stock-to-OpenWrt migration compatibility.
+
+## Development validation path
+
+The hardware-validation work for this port used the following deliberately conservative path before writing NAND:
 
 ```text
 archived PR
