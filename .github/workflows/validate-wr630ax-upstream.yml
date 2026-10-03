@@ -1,4 +1,4 @@
-name: Validate WR630AX upstream branch
+name: Validate WR630AX final upstream branch
 
 on:
   push:
