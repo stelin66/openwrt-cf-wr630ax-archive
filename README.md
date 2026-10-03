@@ -69,6 +69,7 @@ The detailed records are intentionally kept in the Wiki instead of making this
 README a long test transcript:
 
 - **[Full sanitized boot log](https://github.com/stelin66/openwrt-cf-wr630ax-archive/wiki/Current-main-verification#full-sanitized-boot-log)**
+- **[OEM BL2/U-Boot/NMBM boot log](https://openwrt.org/inbox/toh/comfast/cf-wr630ax_v1#bootlogs)** — power-on bootloader/NMBM evidence on the OpenWrt device Wiki
 - **[Current-main hardware verification](https://github.com/stelin66/openwrt-cf-wr630ax-archive/wiki/Current-main-verification)** — boot, NAND/NMBM/UBI, Ethernet, Wi-Fi, GPIO, MAC and permanent-install evidence
 - **[Hardware](https://github.com/stelin66/openwrt-cf-wr630ax-archive/wiki/Hardware)** — board layout, UART, NAND partitions and Factory/NVMEM offsets
 - **[Verification and safety](https://github.com/stelin66/openwrt-cf-wr630ax-archive/wiki/Verification-and-safety)** — backups, hashes, protected partitions and recovery boundary
