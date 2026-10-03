@@ -103,6 +103,7 @@ jobs:
           mkdir -p "$stage"
 
           shopt -s nullglob
+          ls -1 "$out" | tee "$stage/OUTPUT-FILES.txt"
           factory=( "$out"/*comfast_cf-wr630ax*factory.bin )
           sysupgrade=( "$out"/*comfast_cf-wr630ax*sysupgrade.bin )
           kernel=( "$out"/*comfast_cf-wr630ax*initramfs-kernel.bin )
@@ -121,7 +122,9 @@ jobs:
           tar -tf "${sysupgrade[0]}" | grep -Eq '/root$'
 
           # Extract fwtool metadata and verify stock COMFAST legacy board ID.
-          fwtool -i "$stage/SYSUPGRADE-METADATA.json" "${sysupgrade[0]}"
+          fwtool_bin="$PWD/staging_dir/host/bin/fwtool"
+          test -x "$fwtool_bin"
+          "$fwtool_bin" -i "$stage/SYSUPGRADE-METADATA.json" "${sysupgrade[0]}"
           cat "$stage/SYSUPGRADE-METADATA.json"
           python3 - "$stage/SYSUPGRADE-METADATA.json" <<'PY'
           import json
