@@ -659,7 +659,7 @@ Result: the tested current-main sysupgrade path replaced the OpenWrt UBI system 
 
 ## Upstream-submission validation — 2026-10-03
 
-A separate upstream-candidate branch in Stefan's OpenWrt fork was validated with a dedicated GitHub Actions workflow before any pull request was opened.
+A separate upstream-candidate branch in My OpenWrt fork was validated with a dedicated GitHub Actions workflow before any pull request was opened.
 
 The first three validation attempts did not produce a usable artifact. The decisive failure in attempt 3 was not a DTS compilation failure: the WR630AX DTB was built successfully, but the later FIT step received an empty DTS filename and tried to open `image-.dtb`.
 
@@ -748,7 +748,37 @@ It is a single commit ahead of `9b95be917...` and changes exactly the five WR630
 mediatek-filogic-cf-wr630ax-rebased-validation
 ```
 
-This rebased candidate must complete a fresh validation build before the temporary/WIP history is replaced by the final DCO-correct upstream commit. No OpenWrt pull request has been opened yet.
+The fresh rebased validation then completed successfully in GitHub Actions run **37088290475**.
+
+Validation artifact:
+
+```text
+Artifact name: cf-wr630ax-upstream-validation-2
+Artifact ID:   11262604202
+ZIP SHA256:    554101b7da7090f7d02410e84d3d9bb922f4562483a69e18b49b032920298c03
+```
+
+The rebased validation commit and the final upstream commit use the same source tree:
+
+```text
+tree 2599cae8db0d89a4e33e2fa9f48ca57533ae7017
+```
+
+A clean final DCO-correct commit was then created directly on the same upstream base:
+
+```text
+3ff5bab34f094fbd3773d1f6ba3877c7a3d9e33b
+```
+
+Final branch:
+
+```text
+mediatek-filogic-cf-wr630ax-final
+```
+
+The final commit is exactly one commit ahead of `9b95be917...`, changes exactly the five WR630AX support files, and is authored and committed as `Stefan Lindholm <openwrt@stli.se>` with the matching `Signed-off-by`. Its commit message also contains the verified hardware specification and installation procedure.
+
+No OpenWrt pull request has been opened yet.
 
 ## Known non-fatal warnings
 
