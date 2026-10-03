@@ -1,5 +1,5 @@
 name: Audit WR630AX upstream submission
-# Re-run after final install/provenance refinement
+# Audit exact final candidate 59d74b047a6efc21330612b7d3cd371e57a49898
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: stelin66/openwrt
-          ref: mediatek-filogic-cf-wr630ax-final
+          ref: 59d74b047a6efc21330612b7d3cd371e57a49898
           fetch-depth: 0
 
       - name: Record candidate
@@ -38,14 +38,11 @@ jobs:
           set -euxo pipefail
           ./scripts/checkpatch.pl --show-types -g HEAD
 
-      - name: OpenWrt strict checkpatch advisory
+      - name: OpenWrt strict checkpatch
         shell: bash
         run: |
-          set -uo pipefail
-          ./scripts/checkpatch.pl --strict --show-types -g HEAD | tee /tmp/checkpatch-strict.txt
-          rc=${PIPESTATUS[0]}
-          echo "strict_checkpatch_exit=$rc"
-          exit 0
+          set -euxo pipefail
+          ./scripts/checkpatch.pl --strict --show-types -g HEAD
 
       - name: Submission checklist
         shell: bash
@@ -91,6 +88,13 @@ jobs:
           grep -Fq '// SPDX-License-Identifier:' "$dts"
           ! grep -Fq 'mediatek,mtd-eeprom' "$dts"
           grep -Fq 'nvmem-cell-names = "mac-address";' "$dts"
+          grep -Fq 'button-reset {' "$dts"
+          grep -Fq 'button-wps {' "$dts"
+          grep -Fq 'led_wlan5g: led-0 {' "$dts"
+          grep -Fq 'led_wlan2g: led-1 {' "$dts"
+          grep -Fq 'led_mesh: led-2 {' "$dts"
+          grep -Fq 'led_wan: led-3 {' "$dts"
+          grep -Fq 'spi_nand: nand@1 {' "$dts"
 
           block="$(sed -n             '/^define Device\/comfast_cf-wr630ax$/,/^endef$/p'             target/linux/mediatek/image/filogic.mk)"
           ! grep -Fq 'factory.bin' <<<"$block"
