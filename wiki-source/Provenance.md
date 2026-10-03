@@ -53,16 +53,26 @@ They are maintained in:
 
 This keeps the historical source auditable while making it clear which changes were derived from later measurements on real hardware.
 
-## Current upstream candidate
+## Current upstream submission
 
-The current single-commit upstream candidate keeps the original WR630AX
-device-support author as recorded in Git history:
+The current upstream submission is OpenWrt pull request
+[#25580](https://github.com/openwrt/openwrt/pull/25580), with one device-support
+commit changing five OpenWrt source files.
 
-- **Author:** `dingjie <DW22965391@outlook.com>`
+Current submission identity:
+
+- **Author:** `Stefan Lindholm <openwrt@stli.se>`
 - **Committer:** `Stefan Lindholm <openwrt@stli.se>`
+- **Current PR commit:** `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
+- **Original WR630AX device-support author:** `dingjie <DW22965391@outlook.com>`
 - **Earlier PR submitter:** `ddf29` in OpenWrt PR #20654
 
-The candidate preserves dingjie's original `Signed-off-by` and adds Stefan's
-own sign-off after the completion, hardware verification and current-main
+The submission commit preserves dingjie's original `Signed-off-by`, explicitly
+credits dingjie as the original device-support author, and adds Stefan's own
+sign-off after the completion, hardware verification and current-main
 adaptation note. No sign-off or co-authorship is invented for ddf29.
+
+The archive above remains the source of truth for the original Git authorship.
+The current submission uses Stefan as commit author because OpenWrt's automated
+formality check requires an author name in full-name form.
 
