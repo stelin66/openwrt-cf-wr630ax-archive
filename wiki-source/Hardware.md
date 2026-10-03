@@ -52,6 +52,10 @@ The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-
 
 The verified first-installation path requires access to the stock U-Boot serial console, so the enclosure must be opened.
 
+![CF-WR630AX underside showing the four recessed enclosure screws](images/back.jpg)
+
+*Underside of the CF-WR630AX. The four recessed screws must be removed before opening the enclosure. Device-specific serial number, MAC address and QR-code data are obscured in this documentation image.*
+
 1. Disconnect the router from its DC power supply.
 2. Remove the four recessed screws from the underside of the enclosure.
 3. Release the plastic retaining clips around the perimeter of the bottom cover.
@@ -59,15 +63,33 @@ The verified first-installation path requires access to the stock U-Boot serial 
 
 The retaining clips are part of the plastic enclosure. Release them gently rather than forcing the two halves apart.
 
+![Inside of the enclosure cover showing the retaining clips](images/top.jpg)
+
+*Inside view of the enclosure cover, showing the plastic retaining clips around the perimeter.*
+
 Once opened, the PCB, heatsink, antenna wiring and UART header are directly accessible.
+
+![Opened CF-WR630AX enclosure](images/inside.png)
+
+*Opened CF-WR630AX showing the PCB, heatsink and antenna wiring.*
 
 ## UART
 
-The UART header is located next to the heatsink. The PCB silkscreen labels the four pads:
+The UART header is located next to the heatsink.
+
+![CF-WR630AX PCB with the UART header highlighted](images/bord.jpg)
+
+*PCB overview with the UART header highlighted in red.*
+
+The PCB silkscreen labels the four pads:
 
 ```text
 VCC  GND  RX  TX
 ```
+
+![CF-WR630AX UART header close-up](images/uart.jpg)
+
+*UART header close-up. The PCB silkscreen identifies the pads as VCC, GND, RX and TX.*
 
 > [!CAUTION]
 > The UART uses **3.3 V TTL signalling**, but the USB-UART adapter must **not** power the router.
