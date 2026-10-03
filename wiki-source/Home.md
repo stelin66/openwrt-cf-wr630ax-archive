@@ -60,20 +60,6 @@ openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
 SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
 ```
 
-### Historical hardware-fixed full build
-
-```text
-factory.bin
-10354688 bytes
-SHA256 ac8606bf5f548bb26ab3b62112bc73c8c1e8bade2506cdb4d63c94794bd4c6f5
-
-sysupgrade.bin
-9052439 bytes
-SHA256 7ad1a79edf6d419594e837d900e16e00eed81d55e27dc583853759d693fc84be
-```
-
-This sysupgrade image was installed to NAND and survived normal reboot and cold boot.
-
 ### Historical LuCI full build #1
 
 GitHub Actions run **36767167724** completed successfully.
