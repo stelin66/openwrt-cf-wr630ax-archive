@@ -121,9 +121,9 @@ The image lists in this section record earlier hardware-validation builds.
 They are retained for auditability and are not the current upstream image set.
 
 ```text
-factory.bin
-10354688 bytes
-SHA256 ac8606bf5f548bb26ab3b62112bc73c8c1e8bade2506cdb4d63c94794bd4c6f5
+kernel.bin
+4485820 bytes
+SHA256 598499b5616eaa512d8be95f359661ee3edd4372f29e5638bfd941429e820338
 
 sysupgrade.bin
 9052439 bytes
@@ -137,9 +137,9 @@ The sysupgrade tar contained `CONTROL`, `kernel` and `root`; `sysupgrade -T` ret
 GitHub Actions run **36767167724** completed successfully with the same pinned OpenWrt base, feeds and hardware-fix patch, plus `CONFIG_PACKAGE_luci=y`.
 
 ```text
-factory.bin
-10878976 bytes
-SHA256 86911460d89a00b2b73c17a4c67c51284bb0c0ed78d645e58bcc38196d3448b6
+kernel.bin
+4485308 bytes
+SHA256 6b9ef0a625f27f3abc35319cba6b09f853525d71b598576bef6aae33a9c2b539
 
 sysupgrade.bin
 9502999 bytes
@@ -155,9 +155,9 @@ A separate port to current OpenWrt `main` was first built and booted by TFTP/ini
 The historical full validation build from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c` produced:
 
 ```text
-factory.bin
-10747904 bytes
-SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+kernel.bin
+4703880 bytes
+SHA256 ecdba4eee1e69647a96faf300aae60929ecd7d9d92652c7701b1f5ee68ee879f
 
 sysupgrade.bin
 9369879 bytes
