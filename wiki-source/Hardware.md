@@ -48,6 +48,12 @@ The resulting OpenWrt UBI layout on the verified unit is:
 
 The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-block handling.
 
+## Normal installation
+
+For a router still running COMFAST stock firmware, use the COMFAST firmware-update WebUI with the OpenWrt `squashfs-sysupgrade.bin` image. Opening the enclosure is not required.
+
+The OpenWrt kernel/initramfs image and UART/TFTP path below are intended for recovery/unbrick.
+
 ## Recovery / unbrick: opening the enclosure
 
 Opening the enclosure is **not required for a normal OpenWrt installation**. This section documents the verified UART/U-Boot recovery and unbrick path in case the normal firmware upgrade path is unavailable or the router no longer boots normally.
