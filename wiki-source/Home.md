@@ -46,7 +46,11 @@ The goal is to preserve the original work, verify it against real hardware, fix 
 | LuCI image | ✅ | Pinned LuCI full build boots and web UI is operational |
 | Current OpenWrt main / SNAPSHOT | ✅ | Kernel 6.18.52; RAM validation completed, then permanent NAND sysupgrade verified with `rootfs_type=squashfs` |
 
-## Verified images
+## Historical hardware-validation images
+
+The image lists below preserve earlier hardware-validation builds. They are
+historical test records; the current upstream candidate image set is described
+in the repository README and in the recommended-installation section below.
 
 ### Initramfs build #4
 
@@ -56,7 +60,7 @@ openwrt-mediatek-filogic-comfast_cf-wr630ax-initramfs-kernel.bin
 SHA256 9ceca37d2188f1e785d952a2cbb47d8e1b8d993469488b6c8fcd8bab4a18708b
 ```
 
-### Hardware-fixed full build
+### Historical hardware-fixed full build
 
 ```text
 factory.bin
@@ -70,7 +74,7 @@ SHA256 7ad1a79edf6d419594e837d900e16e00eed81d55e27dc583853759d693fc84be
 
 This sysupgrade image was installed to NAND and survived normal reboot and cold boot.
 
-### LuCI full build #1
+### Historical LuCI full build #1
 
 GitHub Actions run **36767167724** completed successfully.
 
@@ -86,7 +90,7 @@ SHA256 0ccb08a90c756ed10df3ba317233e69fafb4203d11a1e7afabb062fb093ea1aa
 
 The LuCI sysupgrade image passed `sysupgrade -T`, was installed successfully, and the web interface was verified on the physical router. LuCI reports the board as **COMFAST CF-WR630AX**, target **mediatek/filogic**, kernel **6.12.55**.
 
-### Current-main full build #1
+### Historical current-main full build #1
 
 GitHub Actions run **36863399195** completed successfully from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c`.
 
