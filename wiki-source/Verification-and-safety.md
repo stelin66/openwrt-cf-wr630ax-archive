@@ -181,7 +181,7 @@ The full sanitized console/test record is preserved at [[Current-main-verificati
 - [x] WPS/Mesh button verified
 - [x] Factory Wi-Fi MAC offsets verified
 - [x] NVMEM MAC fix verified in fresh initramfs
-- [x] Full factory/sysupgrade images built with all fixes
+- [x] Full kernel/sysupgrade validation completed with all fixes
 - [x] BL2 backup copied off-device and checksummed
 - [x] u-boot-env backup copied off-device and checksummed
 - [x] Factory backup copied off-device and checksummed twice
@@ -195,7 +195,7 @@ The full sanitized console/test record is preserved at [[Current-main-verificati
 - [x] Cold boot without UART verified
 - [x] LuCI image verified
 - [x] Current-main initramfs hardware validation completed
-- [x] Current-main full factory/sysupgrade images built and inspected
+- [x] Current-main kernel/sysupgrade validation completed and inspected
 - [x] Current-main `sysupgrade -T` passed with exit status 0
 - [x] Current-main permanent NAND installation completed
 - [x] Current-main boot verified as `rootfs_type=squashfs`
