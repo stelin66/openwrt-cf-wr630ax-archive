@@ -34,7 +34,8 @@ Corresponding layout:
 | `0x580000` | 64 MiB | ubi | stock system area |
 
 > [!CAUTION]
-> The NAND partition named **Factory** is calibration/MAC storage. It is unrelated to an OpenWrt file named `factory.bin`.
+> The NAND partition named **Factory** contains device-specific calibration and
+> MAC data. **Never erase or write this partition.**
 
 After permanent OpenWrt sysupgrade, `/proc/mtd` retained this exact fixed-partition layout. Direct SHA256 reads also confirmed that BL2, u-boot-env, Factory and FIP were unchanged.
 
