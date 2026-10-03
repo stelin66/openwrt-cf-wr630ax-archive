@@ -3,7 +3,7 @@ name: Validate WR630AX upstream branch
 on:
   push:
     branches:
-      - upstream-validation
+      - wr630ax-sysupgrade-validation
     paths:
       - '.github/workflows/validate-wr630ax-upstream.yml'
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 360
     env:
       OPENWRT_REPO: stelin66/openwrt
-      OPENWRT_REF: mediatek-filogic-cf-wr630ax-rebased-validation
+      OPENWRT_REF: mediatek-filogic-cf-wr630ax-sysupgrade-validation
       DEVICE_CONFIG: CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
 
     steps:
@@ -105,12 +105,12 @@ jobs:
           shopt -s nullglob
           factory=( "$out"/*comfast_cf-wr630ax*factory.bin )
           sysupgrade=( "$out"/*comfast_cf-wr630ax*sysupgrade.bin )
+          kernel=( "$out"/*comfast_cf-wr630ax*initramfs-kernel.bin )
 
-          test "${#factory[@]}" -eq 1
+          # Firmware Selector output should be SYSUPGRADE + KERNEL only.
+          test "${#factory[@]}" -eq 0
           test "${#sysupgrade[@]}" -eq 1
-
-          magic="$(od -An -tx1 -N4 "${factory[0]}" | tr -d ' \n')"
-          test "$magic" = "55424923"
+          test "${#kernel[@]}" -eq 1
 
           tar -tf "${sysupgrade[0]}" | tee "$stage/SYSUPGRADE-TAR-LIST.txt"
           control="$(tar -tf "${sysupgrade[0]}" | grep '/CONTROL$' | head -n1)"
@@ -120,14 +120,25 @@ jobs:
           tar -tf "${sysupgrade[0]}" | grep -Eq '/kernel$'
           tar -tf "${sysupgrade[0]}" | grep -Eq '/root$'
 
-          cp "${factory[0]}" "${sysupgrade[0]}" "$stage/"
+          # Extract fwtool metadata and verify stock COMFAST legacy board ID.
+          fwtool -i "$stage/SYSUPGRADE-METADATA.json" "${sysupgrade[0]}"
+          cat "$stage/SYSUPGRADE-METADATA.json"
+          python3 - "$stage/SYSUPGRADE-METADATA.json" <<'PY'
+          import json
+          import sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          supported = data.get("supported_devices", [])
+          assert "cf-wr630ax" in supported, supported
+          PY
+
+          cp "${sysupgrade[0]}" "${kernel[0]}" "$stage/"
           cp "$GITHUB_WORKSPACE/source-commit.txt" "$stage/"
           cp "$GITHUB_WORKSPACE/feed-commits.txt" "$stage/"
           cp "$GITHUB_WORKSPACE/diffconfig.txt" "$stage/"
           test -f "$out/profiles.json" && cp "$out/profiles.json" "$stage/"
           (
             cd "$stage"
-            sha256sum *factory.bin *sysupgrade.bin | tee SHA256SUMS
+            sha256sum *sysupgrade.bin *initramfs-kernel.bin | tee SHA256SUMS
           )
 
       - name: Upload validation artifact
