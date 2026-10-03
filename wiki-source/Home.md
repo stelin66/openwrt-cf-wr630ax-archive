@@ -136,7 +136,7 @@ openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
 
 Opening the enclosure is not required for normal installation. The OpenWrt **kernel/initramfs** image together with UART/TFTP is retained as a recovery/unbrick path.
 
-The COMFAST stock WR630AX firmware itself uses the OpenWrt sysupgrade tar format and the legacy board identifier `cf-wr630ax`. The OpenWrt device definition therefore carries that legacy identifier for stock-to-OpenWrt migration compatibility.
+The COMFAST stock WR630AX firmware itself uses the OpenWrt sysupgrade tar format and the legacy board identifier `cf-wr630ax`. The updated upstream candidate carries that legacy identifier for stock-to-OpenWrt migration compatibility.
 
 ## Development validation path
 
