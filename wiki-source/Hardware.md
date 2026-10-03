@@ -48,13 +48,22 @@ The resulting OpenWrt UBI layout on the verified unit is:
 
 The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-block handling.
 
-## Enclosure access and UART
+## Opening the enclosure
 
 The verified first-installation path requires access to the stock U-Boot serial console, so the enclosure must be opened.
 
-The underside of the enclosure has four recessed screws. After removing the bottom cover, the UART header is visible on the PCB next to the heatsink.
+1. Disconnect the router from its DC power supply.
+2. Remove the four recessed screws from the underside of the enclosure.
+3. Release the plastic retaining clips around the perimeter of the bottom cover.
+4. Lift the cover carefully to expose the PCB.
 
-The PCB silkscreen labels the four UART pads:
+The retaining clips are part of the plastic enclosure. Release them gently rather than forcing the two halves apart.
+
+Once opened, the PCB, heatsink, antenna wiring and UART header are directly accessible.
+
+## UART
+
+The UART header is located next to the heatsink. The PCB silkscreen labels the four pads:
 
 ```text
 VCC  GND  RX  TX
@@ -84,7 +93,7 @@ no parity
 
 The router is powered from its normal DC power supply while the USB-UART adapter provides only the serial connection.
 
-The tested installation path uses this UART connection to interrupt U-Boot autoboot, load the OpenWrt initramfs image over TFTP, and boot OpenWrt entirely from RAM before any NAND write is performed.
+The tested first-installation path uses this UART connection to interrupt U-Boot autoboot, load the OpenWrt initramfs image over TFTP, and boot OpenWrt entirely from RAM before any NAND write is performed.
 
 Direct installation from the stock COMFAST web interface has **not** been verified.
 
@@ -178,20 +187,3 @@ band@1 {
 The NVMEM implementation was first tested in initramfs build #4, re-verified after permanent NAND installation, and verified again on the current-main RAM port. Linux assigned each radio the exact MAC stored in its respective Factory cell.
 
 The original support used a runtime hotplug rule for `phy1` that read `Factory + 0x8000` and then incremented that address. Hardware verification showed that this produced an address different from the value actually stored in Factory. The per-band NVMEM definition removes that workaround and uses the stored secondary address directly.
-
-## WR632AX relationship
-
-OpenWrt's later CF-WR632AX support uses the same two Wi-Fi MAC offsets, `0x4` and `0x8000`. That is useful evidence for a shared COMFAST/MediaTek Factory-data convention.
-
-It is **not** evidence that the firmware images are interchangeable.
-
-Notable WR632AX differences include:
-
-- 512 MiB RAM
-- different Ethernet topology
-- 2.5G WAN
-- USB
-- cooling fan
-- different enclosure/front-panel hardware
-
-Treat WR630AX and WR632AX as separate devices unless a specific component/layout has been independently verified.
