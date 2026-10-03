@@ -52,3 +52,17 @@ They are maintained in:
 [`archive/cf-wr630ax-hwfix-v1.patch`](../archive/cf-wr630ax-hwfix-v1.patch)
 
 This keeps the historical source auditable while making it clear which changes were derived from later measurements on real hardware.
+
+## Current upstream candidate
+
+The current single-commit upstream candidate keeps the original WR630AX
+device-support author as recorded in Git history:
+
+- **Author:** `dingjie <DW22965391@outlook.com>`
+- **Committer:** `Stefan Lindholm <openwrt@stli.se>`
+- **Earlier PR submitter:** `ddf29` in OpenWrt PR #20654
+
+The candidate preserves dingjie's original `Signed-off-by` and adds Stefan's
+own sign-off after the completion, hardware verification and current-main
+adaptation note. No sign-off or co-authorship is invented for ddf29.
+
