@@ -81,9 +81,9 @@ The LuCI sysupgrade image passed `sysupgrade -T`, was installed successfully, an
 GitHub Actions run **36863399195** completed successfully from OpenWrt `main` commit `c759267c92b0697a6fd6f369164a5ed4c1a6a03c`.
 
 ```text
-factory.bin
-10747904 bytes
-SHA256 b58d3593a5bb991f8555dde4986f7e7cb88ead5cbe2909d23480b635b117107a
+kernel.bin
+4703880 bytes
+SHA256 ecdba4eee1e69647a96faf300aae60929ecd7d9d92652c7701b1f5ee68ee879f
 
 sysupgrade.bin
 9369879 bytes
