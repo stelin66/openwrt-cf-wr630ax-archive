@@ -242,6 +242,17 @@ jobs:
           "$APK" adbdump "$OUT/kmod-tun-6.18.52-r1.apk" | tee "$OUT/kmod-tun.adbdump.txt"
           grep -Fq "6.18.52~${ORIG_VERMAGIC}-r1" "$OUT/kmod-tun.adbdump.txt"
 
+      - name: Upload kmod-tun checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: wr630ax-kmod-tun-c759267
+          path: |
+            pkg-artifacts/kmod-tun-6.18.52-r1.apk
+            pkg-artifacts/kmod-tun.adbdump.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
       - name: Build Tailscale 1.102.3 with kmod-tun runtime dependency only
         run: |
           set -euxo pipefail
@@ -253,7 +264,7 @@ jobs:
           p = Path("feeds/packages/net/tailscale/Makefile")
           s = p.read_text()
           old = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-tun\n"
-          new = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle\n  EXTRA_DEPENDS:=kmod-tun (= 6.18.52-r1)\n"
+          new = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle\n  EXTRA_DEPENDS:=kmod-tun\n"
           if old not in s:
               raise SystemExit("unexpected tailscale dependency line")
           p.write_text(s.replace(old, new, 1))
