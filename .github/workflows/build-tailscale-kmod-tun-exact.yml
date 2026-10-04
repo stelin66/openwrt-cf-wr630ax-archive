@@ -110,8 +110,21 @@ jobs:
           set -euo pipefail
           cd openwrt
           make -j"$(nproc)" download
-          if ! make -j"$(nproc)" target/compile package/system/apk/host-compile; then
-            make -j1 V=s target/compile package/system/apk/host-compile
+
+          # target/compile alone does not bootstrap a clean OpenWrt tree.
+          # Build OpenWrt's host tools and cross-toolchain first, then the
+          # reference kernel environment.
+          if ! make -j"$(nproc)" tools/install; then
+            make -j1 V=s tools/install
+          fi
+          if ! make -j"$(nproc)" toolchain/install; then
+            make -j1 V=s toolchain/install
+          fi
+          if ! make -j"$(nproc)" target/compile; then
+            make -j1 V=s target/compile
+          fi
+          if ! make -j"$(nproc)" package/system/apk/host-compile; then
+            make -j1 V=s package/system/apk/host-compile
           fi
 
           KDIR="$(find build_dir -type f -path '*/linux-6.18.52/.vermagic' -printf '%h\n' | head -n1)"
