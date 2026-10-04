@@ -144,7 +144,7 @@ jobs:
           echo "Kernel release: $KERNEL_RELEASE"
           test "$KERNEL_RELEASE" = "6.18.52"
 
-      - name: Build tun.ko without changing reference kernel config
+      - name: Build tun.ko against reference kernel ABI
         run: |
           set -euxo pipefail
           cd openwrt
@@ -157,24 +157,45 @@ jobs:
           GCC="$(find "$PWD/staging_dir" -type f -path '*/bin/aarch64-openwrt-linux-musl-gcc' -print -quit)"
           test -x "$GCC"
           CROSS="${GCC%gcc}"
-
-          make -C "$KDIR" -j"$(nproc)" \
-            ARCH=arm64 \
-            CROSS_COMPILE="$CROSS" \
-            CONFIG_TUN=m \
-            drivers/net/tun.ko
-
-          test -s "$KDIR/drivers/net/tun.ko"
-          cmp /tmp/kernel.config.before "$KDIR/.config"
-          test "$(cat "$KDIR/.vermagic")" = "$ORIG_VERMAGIC"
-
-          modinfo "$KDIR/drivers/net/tun.ko" | tee "$GITHUB_WORKSPACE/tun.modinfo"
-          modinfo -F vermagic "$KDIR/drivers/net/tun.ko" > "$GITHUB_WORKSPACE/tun-linux-vermagic.txt"
+          TARGET_STAGING="$(find "$PWD/staging_dir" -maxdepth 1 -type d -name 'target-aarch64_cortex-a53_musl' -print -quit)"
+          test -d "$TARGET_STAGING"
+          export STAGING_DIR="$TARGET_STAGING"
 
           EXISTING="$(find "$KDIR" -type f -name '*.ko' ! -path '*/drivers/net/tun.ko' -print -quit)"
           test -n "$EXISTING"
           modinfo -F vermagic "$EXISTING" > "$GITHUB_WORKSPACE/reference-module-linux-vermagic.txt"
+
+          sed -i 's/^# CONFIG_TUN is not set$/CONFIG_TUN=m/' "$KDIR/.config"
+          grep -Fxq 'CONFIG_TUN=m' "$KDIR/.config"
+
+          make -C "$KDIR" \
+            ARCH=arm64 \
+            CROSS_COMPILE="$CROSS" \
+            olddefconfig
+
+          grep -Fxq 'CONFIG_TUN=m' "$KDIR/.config"
+
+          make -C "$KDIR" -j"$(nproc)" \
+            ARCH=arm64 \
+            CROSS_COMPILE="$CROSS" \
+            drivers/net/tun.ko
+
+          test -s "$KDIR/drivers/net/tun.ko"
+          cp "$KDIR/drivers/net/tun.ko" "$GITHUB_WORKSPACE/tun.ko"
+
+          modinfo "$GITHUB_WORKSPACE/tun.ko" | tee "$GITHUB_WORKSPACE/tun.modinfo"
+          modinfo -F vermagic "$GITHUB_WORKSPACE/tun.ko" > "$GITHUB_WORKSPACE/tun-linux-vermagic.txt"
           cmp "$GITHUB_WORKSPACE/reference-module-linux-vermagic.txt" "$GITHUB_WORKSPACE/tun-linux-vermagic.txt"
+
+          cp /tmp/kernel.config.before "$KDIR/.config"
+          make -C "$KDIR" \
+            ARCH=arm64 \
+            CROSS_COMPILE="$CROSS" \
+            olddefconfig
+
+          cmp /tmp/kernel.config.before "$KDIR/.config"
+          grep -Fxq '# CONFIG_TUN is not set' "$KDIR/.config"
+          test "$(cat "$KDIR/.vermagic")" = "$ORIG_VERMAGIC"
 
       - name: Generate isolated APK signing key
         run: |
@@ -200,7 +221,7 @@ jobs:
           rm -rf "$STAGE"
           mkdir -p "$STAGE/lib/modules/$KERNEL_RELEASE" "$STAGE/etc/modules.d" "$OUT"
 
-          cp "$KDIR/drivers/net/tun.ko" "$STAGE/lib/modules/$KERNEL_RELEASE/tun.ko"
+          cp "$GITHUB_WORKSPACE/tun.ko" "$STAGE/lib/modules/$KERNEL_RELEASE/tun.ko"
           printf '%s\n' tun > "$STAGE/etc/modules.d/30-tun"
 
           SOURCE_DATE_EPOCH=0 "$APK" mkpkg \
