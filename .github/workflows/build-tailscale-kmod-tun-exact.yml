@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: wr630ax-exact-tailscale-tun-c759267
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -181,7 +181,9 @@ jobs:
           set -euxo pipefail
           cd openwrt
           openssl ecparam -name prime256v1 -genkey -noout -out private-key.pem
+          sed -i '1s/^/untrusted comment: WR630AX isolated package build\n/' private-key.pem
           openssl ec -in private-key.pem -pubout > public-key.pem
+          sed -i '1s/^/untrusted comment: WR630AX isolated package build\n/' public-key.pem
           chmod 600 private-key.pem
           test -s public-key.pem
 
@@ -237,9 +239,13 @@ jobs:
           PY
 
           grep -Fq 'PKG_VERSION:=1.102.3' feeds/packages/net/tailscale/Makefile
-          printf '%s\n' 'CONFIG_PACKAGE_tailscale=m' >> .config
+          {
+            printf '%s\n' 'CONFIG_PACKAGE_tailscale=m'
+            printf '%s\n' 'CONFIG_SIGN_EACH_PACKAGE=y'
+          } >> .config
           make defconfig
           grep -Fxq 'CONFIG_PACKAGE_tailscale=m' .config
+          grep -Fxq 'CONFIG_SIGN_EACH_PACKAGE=y' .config
           grep -Fxq '# CONFIG_PACKAGE_kmod-tun is not set' .config
 
           KDIR="$(cat "$GITHUB_WORKSPACE/KDIR.txt")"
