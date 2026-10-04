@@ -128,6 +128,8 @@ Opening the enclosure is not required for normal installation. The OpenWrt **ker
 
 The COMFAST stock WR630AX firmware itself uses the OpenWrt sysupgrade tar format and the legacy board identifier `cf-wr630ax`. The updated upstream candidate carries that legacy identifier for stock-to-OpenWrt migration compatibility.
 
+> **Verification note:** The stock-WebUI installation path itself was not tested on the hardware-validation unit because the router was already running OpenWrt via UART/TFTP during development. The recommendation is based on the WR630AX stock firmware using the OpenWrt sysupgrade tar format and the same stock-WebUI/sysupgrade installation pattern documented for related COMFAST models.
+
 ## Development validation path
 
 The hardware-validation work for this port used the following deliberately conservative path before writing NAND:
