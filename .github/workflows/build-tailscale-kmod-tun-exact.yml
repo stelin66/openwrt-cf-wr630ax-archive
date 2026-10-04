@@ -154,7 +154,7 @@ jobs:
           cp "$KDIR/.config" /tmp/kernel.config.before
           grep -Fxq '# CONFIG_TUN is not set' "$KDIR/.config"
 
-          GCC="$(find staging_dir -type f -path '*/bin/aarch64-openwrt-linux-musl-gcc' -print -quit)"
+          GCC="$(find "$PWD/staging_dir" -type f -path '*/bin/aarch64-openwrt-linux-musl-gcc' -print -quit)"
           test -x "$GCC"
           CROSS="${GCC%gcc}"
 
