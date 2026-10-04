@@ -84,7 +84,7 @@ The auditable Markdown source for the Wiki lives in
 ## Installation
 
 For a router still running COMFAST stock firmware, connect a computer to a LAN
-port and open `http://192.168.0.1/`. The intended normal install path is the
+port and open `http://192.168.0.1/`. The recommended normal installation path is the
 stock COMFAST firmware-update WebUI using:
 
 ```text
@@ -93,6 +93,13 @@ openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
 
 The COMFAST stock firmware itself uses the OpenWrt sysupgrade archive format
 with legacy board ID `cf-wr630ax`.
+
+> **Verification note:** The stock-WebUI installation path itself was not tested
+> on the hardware-validation unit because the router was already running OpenWrt
+> via UART/TFTP during development. The recommendation is based on the WR630AX
+> stock firmware using the OpenWrt sysupgrade archive format and the same
+> stock-WebUI/sysupgrade installation pattern documented for related COMFAST
+> models.
 
 Opening the enclosure is **not** required for normal installation. UART/TFTP
 with the initramfs image is retained as the recovery/unbrick path.
