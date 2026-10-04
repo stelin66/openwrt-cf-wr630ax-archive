@@ -123,8 +123,8 @@ jobs:
           if ! make -j"$(nproc)" target/compile; then
             make -j1 V=s target/compile
           fi
-          if ! make -j"$(nproc)" package/system/apk/host-compile; then
-            make -j1 V=s package/system/apk/host-compile
+          if ! make -j"$(nproc)" package/system/apk/host/compile; then
+            make -j1 V=s package/system/apk/host/compile
           fi
 
           KDIR="$(find build_dir -type f -path '*/linux-6.18.52/.vermagic' -printf '%h\n' | head -n1)"
