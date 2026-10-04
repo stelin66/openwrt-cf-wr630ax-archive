@@ -1,0 +1,297 @@
+name: Build exact Tailscale + kmod-tun for installed WR630AX
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - pkg-build-tailscale-tun-c759267
+    paths:
+      - '.github/workflows/build-tailscale-kmod-tun-exact.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wr630ax-exact-tailscale-tun-c759267
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OPENWRT_BASE: c759267c92b0697a6fd6f369164a5ed4c1a6a03c
+      ARCHIVE_REF: 7efaef7c927fbdd1920c082258571d478b654dad
+      PACKAGES_FEED: 95d73ebcc95ade2ea78b0a281898cf8b6ec7b7f9
+      LUCI_FEED: 32775cf32b94ecf12bca08ce62aeb2723d2d51ce
+      ROUTING_FEED: 4b9891b9136259f93294a424507ed24c5e8c1cbd
+      TELEPHONY_FEED: 5d68d53c160a325ea9d03fce393e051573bcc736
+      VIDEO_FEED: 2baec75e2c07b3bb3ae3b73580a3bd3074818707
+
+    steps:
+      - name: Checkout immutable WR630AX reference files
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ARCHIVE_REF }}
+          path: archive-repo
+
+      - name: Checkout exact OpenWrt base
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          ref: ${{ env.OPENWRT_BASE }}
+          fetch-depth: 0
+          path: openwrt
+
+      - name: Install build dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libncurses-dev libssl-dev python3 python3-setuptools \
+            python3-pyelftools libelf-dev rsync swig unzip zlib1g-dev zstd \
+            file wget ca-certificates u-boot-tools kmod
+
+      - name: Apply exact WR630AX port used by run 36863399195
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          test "$(git rev-parse HEAD)" = "$OPENWRT_BASE"
+          test ! -e target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          cp "$GITHUB_WORKSPACE/archive-repo/current-main/mt7981b-comfast-cf-wr630ax.dts" \
+             target/linux/mediatek/dts/
+          python3 "$GITHUB_WORKSPACE/archive-repo/current-main/apply-port.py"
+          git diff --check
+          grep -Fq 'model = "COMFAST CF-WR630AX";' target/linux/mediatek/dts/mt7981b-comfast-cf-wr630ax.dts
+          grep -Fq 'define Device/comfast_cf-wr630ax' target/linux/mediatek/image/filogic.mk
+          git diff > "$GITHUB_WORKSPACE/current-main-port.diff"
+
+      - name: Pin exact feeds from reference build
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > feeds.conf <<EOF
+          src-git packages https://git.openwrt.org/feed/packages.git^${PACKAGES_FEED}
+          src-git luci https://git.openwrt.org/project/luci.git^${LUCI_FEED}
+          src-git routing https://git.openwrt.org/feed/routing.git^${ROUTING_FEED}
+          src-git telephony https://git.openwrt.org/feed/telephony.git^${TELEPHONY_FEED}
+          src-git video https://github.com/openwrt/video.git^${VIDEO_FEED}
+          EOF
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          test "$(git -C feeds/packages rev-parse HEAD)" = "$PACKAGES_FEED"
+          test "$(git -C feeds/luci rev-parse HEAD)" = "$LUCI_FEED"
+          test "$(git -C feeds/routing rev-parse HEAD)" = "$ROUTING_FEED"
+          test "$(git -C feeds/telephony rev-parse HEAD)" = "$TELEPHONY_FEED"
+          test "$(git -C feeds/video rev-parse HEAD)" = "$VIDEO_FEED"
+
+      - name: Reproduce reference target configuration
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y
+          EOF
+          make defconfig
+          grep -Fxq 'CONFIG_TARGET_mediatek=y' .config
+          grep -Fxq 'CONFIG_TARGET_mediatek_filogic=y' .config
+          grep -Fxq 'CONFIG_TARGET_mediatek_filogic_DEVICE_comfast_cf-wr630ax=y' .config
+          ! grep -Fxq 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' .config
+          grep -Fxq '# CONFIG_PACKAGE_kmod-tun is not set' .config
+          grep -Fxq '# CONFIG_PACKAGE_tailscale is not set' .config
+          cp .config "$GITHUB_WORKSPACE/reference-openwrt.config"
+          ./scripts/diffconfig.sh | tee "$GITHUB_WORKSPACE/reference-diffconfig.txt"
+
+      - name: Build exact kernel environment and APK host tool
+        run: |
+          set -euo pipefail
+          cd openwrt
+          make -j"$(nproc)" download
+          if ! make -j"$(nproc)" target/compile package/system/apk/host-compile; then
+            make -j1 V=s target/compile package/system/apk/host-compile
+          fi
+
+          KDIR="$(find build_dir -type f -path '*/linux-6.18.52/.vermagic' -printf '%h\n' | head -n1)"
+          test -n "$KDIR"
+          test -f "$KDIR/.config"
+          test -f "$KDIR/Module.symvers"
+          test -x staging_dir/host/bin/apk
+
+          ORIG_VERMAGIC="$(cat "$KDIR/.vermagic")"
+          KERNEL_RELEASE="$(cat "$KDIR/include/config/kernel.release")"
+          printf '%s\n' "$KDIR" > "$GITHUB_WORKSPACE/KDIR.txt"
+          printf '%s\n' "$ORIG_VERMAGIC" > "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt"
+          printf '%s\n' "$KERNEL_RELEASE" > "$GITHUB_WORKSPACE/kernel-release.txt"
+          cp "$KDIR/.config" "$GITHUB_WORKSPACE/reference-kernel.config"
+
+          echo "OpenWrt vermagic: $ORIG_VERMAGIC"
+          echo "Kernel release: $KERNEL_RELEASE"
+          test "$KERNEL_RELEASE" = "6.18.52"
+
+      - name: Build tun.ko without changing reference kernel config
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          KDIR="$(cat "$GITHUB_WORKSPACE/KDIR.txt")"
+          ORIG_VERMAGIC="$(cat "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt")"
+
+          cp "$KDIR/.config" /tmp/kernel.config.before
+          grep -Fxq '# CONFIG_TUN is not set' "$KDIR/.config"
+
+          GCC="$(find staging_dir -type f -path '*/bin/aarch64-openwrt-linux-musl-gcc' -print -quit)"
+          test -x "$GCC"
+          CROSS="${GCC%gcc}"
+
+          make -C "$KDIR" -j"$(nproc)" \
+            ARCH=arm64 \
+            CROSS_COMPILE="$CROSS" \
+            CONFIG_TUN=m \
+            drivers/net/tun.ko
+
+          test -s "$KDIR/drivers/net/tun.ko"
+          cmp /tmp/kernel.config.before "$KDIR/.config"
+          test "$(cat "$KDIR/.vermagic")" = "$ORIG_VERMAGIC"
+
+          modinfo "$KDIR/drivers/net/tun.ko" | tee "$GITHUB_WORKSPACE/tun.modinfo"
+          modinfo -F vermagic "$KDIR/drivers/net/tun.ko" > "$GITHUB_WORKSPACE/tun-linux-vermagic.txt"
+
+          EXISTING="$(find "$KDIR" -type f -name '*.ko' ! -path '*/drivers/net/tun.ko' -print -quit)"
+          test -n "$EXISTING"
+          modinfo -F vermagic "$EXISTING" > "$GITHUB_WORKSPACE/reference-module-linux-vermagic.txt"
+          cmp "$GITHUB_WORKSPACE/reference-module-linux-vermagic.txt" "$GITHUB_WORKSPACE/tun-linux-vermagic.txt"
+
+      - name: Generate isolated APK signing key
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          openssl ecparam -name prime256v1 -genkey -noout -out private-key.pem
+          openssl ec -in private-key.pem -pubout > public-key.pem
+          chmod 600 private-key.pem
+          test -s public-key.pem
+
+      - name: Package ABI-locked kmod-tun APK
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          KDIR="$(cat "$GITHUB_WORKSPACE/KDIR.txt")"
+          ORIG_VERMAGIC="$(cat "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt")"
+          KERNEL_RELEASE="$(cat "$GITHUB_WORKSPACE/kernel-release.txt")"
+          APK="$PWD/staging_dir/host/bin/apk"
+          STAGE="$GITHUB_WORKSPACE/stage-kmod-tun"
+          OUT="$GITHUB_WORKSPACE/pkg-artifacts"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/lib/modules/$KERNEL_RELEASE" "$STAGE/etc/modules.d" "$OUT"
+
+          cp "$KDIR/drivers/net/tun.ko" "$STAGE/lib/modules/$KERNEL_RELEASE/tun.ko"
+          printf '%s\n' tun > "$STAGE/etc/modules.d/30-tun"
+
+          SOURCE_DATE_EPOCH=0 "$APK" mkpkg \
+            --info "name:kmod-tun" \
+            --info "version:6.18.52-r1" \
+            --info "description:Kernel support for the TUN/TAP tunneling device" \
+            --info "arch:aarch64_cortex-a53" \
+            --info "license:GPL-2.0-only" \
+            --info "origin:kernel" \
+            --info "url:https://www.kernel.org/" \
+            --info "maintainer:OpenWrt" \
+            --info "depends:kernel=6.18.52~${ORIG_VERMAGIC}-r1" \
+            --files "$STAGE" \
+            --sign private-key.pem \
+            --output "$OUT/kmod-tun-6.18.52-r1.apk"
+
+          test -s "$OUT/kmod-tun-6.18.52-r1.apk"
+          "$APK" adbdump "$OUT/kmod-tun-6.18.52-r1.apk" | tee "$OUT/kmod-tun.adbdump.txt"
+          grep -Fq "6.18.52~${ORIG_VERMAGIC}-r1" "$OUT/kmod-tun.adbdump.txt"
+
+      - name: Build Tailscale 1.102.3 with kmod-tun runtime dependency only
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          ORIG_VERMAGIC="$(cat "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt")"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("feeds/packages/net/tailscale/Makefile")
+          s = p.read_text()
+          old = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-tun\n"
+          new = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle\n  EXTRA_DEPENDS:=kmod-tun\n"
+          if old not in s:
+              raise SystemExit("unexpected tailscale dependency line")
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+          grep -Fq 'PKG_VERSION:=1.102.3' feeds/packages/net/tailscale/Makefile
+          printf '%s\n' 'CONFIG_PACKAGE_tailscale=m' >> .config
+          make defconfig
+          grep -Fxq 'CONFIG_PACKAGE_tailscale=m' .config
+          grep -Fxq '# CONFIG_PACKAGE_kmod-tun is not set' .config
+
+          KDIR="$(cat "$GITHUB_WORKSPACE/KDIR.txt")"
+          test "$(cat "$KDIR/.vermagic")" = "$ORIG_VERMAGIC"
+
+          make package/feeds/packages/tailscale/download
+          if ! make -j"$(nproc)" package/feeds/packages/tailscale/compile; then
+            make -j1 V=s package/feeds/packages/tailscale/compile
+          fi
+
+          test "$(cat "$KDIR/.vermagic")" = "$ORIG_VERMAGIC"
+
+          TAILSCALE_APK="$(find bin/packages -type f -name 'tailscale-1.102.3-r1.apk' -print -quit)"
+          test -n "$TAILSCALE_APK"
+          cp "$TAILSCALE_APK" "$GITHUB_WORKSPACE/pkg-artifacts/"
+
+          staging_dir/host/bin/apk adbdump "$GITHUB_WORKSPACE/pkg-artifacts/tailscale-1.102.3-r1.apk" \
+            | tee "$GITHUB_WORKSPACE/pkg-artifacts/tailscale.adbdump.txt"
+          grep -Fq 'kmod-tun' "$GITHUB_WORKSPACE/pkg-artifacts/tailscale.adbdump.txt"
+
+      - name: Verify signatures and stage metadata
+        run: |
+          set -euxo pipefail
+          cd openwrt
+          OUT="$GITHUB_WORKSPACE/pkg-artifacts"
+          mkdir -p "$OUT/keys"
+          cp public-key.pem "$OUT/keys/wr630ax-tailscale-build.pem"
+
+          staging_dir/host/bin/apk --keys-dir "$OUT/keys" verify "$OUT/kmod-tun-6.18.52-r1.apk"
+          staging_dir/host/bin/apk --keys-dir "$OUT/keys" verify "$OUT/tailscale-1.102.3-r1.apk"
+
+          cp "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt" "$OUT/"
+          cp "$GITHUB_WORKSPACE/kernel-release.txt" "$OUT/"
+          cp "$GITHUB_WORKSPACE/tun.modinfo" "$OUT/"
+          cp "$GITHUB_WORKSPACE/reference-module-linux-vermagic.txt" "$OUT/"
+          cp "$GITHUB_WORKSPACE/tun-linux-vermagic.txt" "$OUT/"
+          cp "$GITHUB_WORKSPACE/reference-diffconfig.txt" "$OUT/"
+          cp "$GITHUB_WORKSPACE/current-main-port.diff" "$OUT/"
+
+          (
+            cd "$OUT"
+            sha256sum kmod-tun-6.18.52-r1.apk tailscale-1.102.3-r1.apk keys/wr630ax-tailscale-build.pem \
+              | tee SHA256SUMS
+          )
+
+          {
+            echo "Reference firmware Actions run: 36863399195"
+            echo "OpenWrt base: $OPENWRT_BASE"
+            echo "Archive reference commit: $ARCHIVE_REF"
+            echo "Target: mediatek/filogic"
+            echo "Package arch: aarch64_cortex-a53"
+            echo "Kernel release: $(cat "$GITHUB_WORKSPACE/kernel-release.txt")"
+            echo "OpenWrt kernel ABI/vermagic: $(cat "$GITHUB_WORKSPACE/original-openwrt-vermagic.txt")"
+            echo "packages feed: $PACKAGES_FEED"
+            echo "tailscale version: 1.102.3-r1"
+            echo "kmod-tun version: 6.18.52-r1"
+            echo "Signing key: isolated key generated only for these packages"
+            echo "Private signing key is NOT uploaded"
+          } | tee "$OUT/BUILD-METADATA.txt"
+
+      - name: Upload exact package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wr630ax-tailscale-kmod-tun-c759267
+          path: pkg-artifacts/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
