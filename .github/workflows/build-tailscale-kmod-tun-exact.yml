@@ -264,7 +264,7 @@ jobs:
           p = Path("feeds/packages/net/tailscale/Makefile")
           s = p.read_text()
           old = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-tun\n"
-          new = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle\n  EXTRA_DEPENDS:=kmod-tun\n"
+          new = "  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle\n  EXTRA_DEPENDS:=kmod-tun (=6.18.52-r1)\n"
           if old not in s:
               raise SystemExit("unexpected tailscale dependency line")
           p.write_text(s.replace(old, new, 1))
