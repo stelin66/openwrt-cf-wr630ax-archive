@@ -14,11 +14,13 @@ later hardware verification, corrections and current OpenWrt port.
 
 ## Upstream candidate
 
+Upstream PR: https://github.com/openwrt/openwrt/pull/25580
+
 The current upstream candidate is maintained in
 [My OpenWrt fork](https://github.com/stelin66/openwrt):
 
 - branch: `mediatek-filogic-cf-wr630ax-final`
-- candidate commit: `59d74b047a6efc21330612b7d3cd371e57a49898`
+- candidate commit: `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
 - target: `mediatek/filogic`
 - one logical device-support commit
 - exactly five OpenWrt source files changed
@@ -28,8 +30,10 @@ The current upstream candidate is maintained in
 - legacy stock board ID `cf-wr630ax` is retained in
   `SUPPORTED_DEVICES` for migration compatibility
 
-The final candidate was rebuilt and validated successfully in GitHub Actions
-run `37147860083`. The generated images have SHA256:
+The source content was built and validated successfully in GitHub Actions
+run `37147860083` from commit `59d74b0`. The current candidate commit
+`8291980` changes only commit metadata and has the identical source tree,
+so the generated image hashes remain valid. The images have SHA256:
 
 - sysupgrade: `4e90d99d91f5d8f19b8dbc5877cf0d49d61f0cfad727aa7729058bccc0f6ba01`
 - initramfs: `9878e15ba8f7ac97490aacce63bb22f0f4e62cb7fdc723fc174fe55d536de7e1`
