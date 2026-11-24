@@ -56,14 +56,15 @@ This keeps the historical source auditable while making it clear which changes w
 ## Current upstream submission
 
 The current upstream submission is OpenWrt pull request
-[#25580](https://github.com/openwrt/openwrt/pull/25580), with one device-support
-commit changing five OpenWrt source files.
+[#25580](https://github.com/openwrt/openwrt/pull/25580), with the device-support commit
+and a follow-up commit adding the label MAC alias. The PR changes five OpenWrt source files.
 
-Current submission identity:
+Device-support commit identity:
 
 - **Author:** `Stefan Lindholm <openwrt@stli.se>`
 - **Committer:** `Stefan Lindholm <openwrt@stli.se>`
-- **Current PR commit:** `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
+- **Device-support commit:** `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
+- **Current PR head (label MAC alias):** `2be990f6de077d64310b5fbacf34d5b3ca0069e7`
 - **Original WR630AX device-support author:** `dingjie <DW22965391@outlook.com>`
 - **Earlier PR submitter:** `ddf29` in OpenWrt PR #20654
 
