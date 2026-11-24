@@ -20,9 +20,9 @@ The current upstream candidate is maintained in
 [My OpenWrt fork](https://github.com/stelin66/openwrt):
 
 - branch: `mediatek-filogic-cf-wr630ax-final`
-- candidate commit: `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
+- candidate commit: `2be990f6de077d64310b5fbacf34d5b3ca0069e7`
 - target: `mediatek/filogic`
-- one logical device-support commit
+- device-support commit plus a follow-up commit for the label MAC alias
 - exactly five OpenWrt source files changed
 - DCO/sign-off chain preserves original author credit
 - normal image: `squashfs-sysupgrade.bin`
@@ -30,10 +30,10 @@ The current upstream candidate is maintained in
 - legacy stock board ID `cf-wr630ax` is retained in
   `SUPPORTED_DEVICES` for migration compatibility
 
-The source content was built and validated successfully in GitHub Actions
-run `37147860083` from commit `59d74b0`. The current candidate commit
-`8291980` changes only commit metadata and has the identical source tree,
-so the generated image hashes remain valid. The images have SHA256:
+The images listed below were built and validated in GitHub Actions run
+`37147860083` from commit `59d74b0`. The current candidate adds
+`label-mac-device = &gmac0;` to the DTS. These SHA256 checksums apply to
+those earlier images, built before the alias was added:
 
 - sysupgrade: `4e90d99d91f5d8f19b8dbc5877cf0d49d61f0cfad727aa7729058bccc0f6ba01`
 - initramfs: `9878e15ba8f7ac97490aacce63bb22f0f4e62cb7fdc723fc174fe55d536de7e1`
