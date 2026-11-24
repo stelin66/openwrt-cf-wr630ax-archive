@@ -665,7 +665,7 @@ The final upstream submission is OpenWrt pull request
 ```text
 Title: mediatek: add support for COMFAST CF-WR630AX
 Branch: mediatek-filogic-cf-wr630ax-final
-Current PR commit: 8291980c3ad071ffdc01c944ffa77ddf7514aa7e
+PR commit at validation: 8291980c3ad071ffdc01c944ffa77ddf7514aa7e
 Source tree: c7e20da73eaab25732fe0977cab3335ef9b3fa1b
 Files changed: 5
 Commits: 1
@@ -683,7 +683,9 @@ GitHub Actions run **37147860083** from validation commit
 correction changed the commit object only; the source tree remained
 `c7e20da73eaab25732fe0977cab3335ef9b3fa1b`.
 
-Final validation images:
+The PR head is now `2be990f6de077d64310b5fbacf34d5b3ca0069e7`.
+The follow-up commit adds `label-mac-device = &gmac0;`. The SHA256
+checksums below apply to the validation images built before that change.
 
 ```text
 openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
