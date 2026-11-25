@@ -683,7 +683,7 @@ GitHub Actions run **37147860083** from validation commit
 correction changed the commit object only; the source tree remained
 `c7e20da73eaab25732fe0977cab3335ef9b3fa1b`.
 
-The PR head is now `2be990f6de077d64310b5fbacf34d5b3ca0069e7`.
+The PR head is now `a8dfb7df9fd2cef812a66b21dc40813617827ca3`.
 The follow-up commit adds `label-mac-device = &gmac0;`. The SHA256
 checksums below apply to the validation images built before that change.
 

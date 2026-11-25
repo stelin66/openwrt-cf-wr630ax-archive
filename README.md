@@ -20,7 +20,7 @@ The current upstream candidate is maintained in
 [My OpenWrt fork](https://github.com/stelin66/openwrt):
 
 - branch: `mediatek-filogic-cf-wr630ax-final`
-- candidate commit: `2be990f6de077d64310b5fbacf34d5b3ca0069e7`
+- candidate commit: `a8dfb7df9fd2cef812a66b21dc40813617827ca3`
 - target: `mediatek/filogic`
 - device-support commit plus a follow-up commit for the label MAC alias
 - exactly five OpenWrt source files changed

@@ -63,8 +63,8 @@ Device-support commit identity:
 
 - **Author:** `Stefan Lindholm <openwrt@stli.se>`
 - **Committer:** `Stefan Lindholm <openwrt@stli.se>`
-- **Device-support commit:** `8291980c3ad071ffdc01c944ffa77ddf7514aa7e`
-- **Current PR head (label MAC alias):** `2be990f6de077d64310b5fbacf34d5b3ca0069e7`
+- **Device-support commit:** `5ef13aa04e9c739ba2c4a07ac8d1c9bbedc9c958`
+- **Current PR head (label MAC alias):** `a8dfb7df9fd2cef812a66b21dc40813617827ca3`
 - **Original WR630AX device-support author:** `dingjie <DW22965391@outlook.com>`
 - **Earlier PR submitter:** `ddf29` in OpenWrt PR #20654
 
