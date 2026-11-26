@@ -20,9 +20,9 @@ The current upstream candidate is maintained in
 [My OpenWrt fork](https://github.com/stelin66/openwrt):
 
 - branch: `mediatek-filogic-cf-wr630ax-final`
-- candidate commit: `a8dfb7df9fd2cef812a66b21dc40813617827ca3`
+- candidate commit: `a91f9af3478fa78760f59897f90a1f3376466f0d`
 - target: `mediatek/filogic`
-- device-support commit plus a follow-up commit for the label MAC alias
+- one device-support commit including the label MAC alias
 - exactly five OpenWrt source files changed
 - DCO/sign-off chain preserves original author credit
 - normal image: `squashfs-sysupgrade.bin`

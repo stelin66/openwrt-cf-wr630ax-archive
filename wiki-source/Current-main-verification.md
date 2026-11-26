@@ -683,9 +683,11 @@ GitHub Actions run **37147860083** from validation commit
 correction changed the commit object only; the source tree remained
 `c7e20da73eaab25732fe0977cab3335ef9b3fa1b`.
 
-The PR head is now `a8dfb7df9fd2cef812a66b21dc40813617827ca3`.
-The follow-up commit adds `label-mac-device = &gmac0;`. The SHA256
-checksums below apply to the validation images built before that change.
+The PR head is now `a91f9af3478fa78760f59897f90a1f3376466f0d`.
+The squashed commit includes `label-mac-device = &gmac0;` and has the
+same source tree as pre-squash commit `a8dfb7d`, which passed the three
+PR build workflows. The SHA256 checksums below apply to the earlier
+validation images built before the label MAC alias was added.
 
 ```text
 openwrt-mediatek-filogic-comfast_cf-wr630ax-squashfs-sysupgrade.bin
