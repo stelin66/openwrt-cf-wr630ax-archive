@@ -50,7 +50,9 @@ The UBI device reported 512 total LEBs, 0 bad PEBs and 19 PEBs reserved for bad-
 
 ## Normal installation
 
-For a router still running COMFAST stock firmware, use the COMFAST firmware-update WebUI with the OpenWrt `squashfs-sysupgrade.bin` image. Opening the enclosure is not required.
+For a router still running COMFAST stock firmware, use the COMFAST firmware-update WebUI with the OpenWrt `squashfs-sysupgrade.bin` image. Opening the enclosure is not required for this method.
+
+> **Verification note:** Installation via the stock WebUI was not tested on the CF-WR630AX. The test unit was already running OpenWrt after booting via UART/TFTP. The recommendation is based on the stock firmware using the OpenWrt sysupgrade archive format and on the same method being documented for related COMFAST models.
 
 The OpenWrt kernel/initramfs image and UART/TFTP path below are intended for recovery/unbrick.
 
